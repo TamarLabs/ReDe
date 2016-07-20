@@ -1,2 +1,1 @@
-# ReDehy
-A Redis dehydrator module
+# An Simple Redis Module for data dehydration
