@@ -19,6 +19,8 @@
 
 // Format of the queue name (for storage)
 #define REDIS_QUEUE_NAME_FORMAT "timeout_queue#%d"
+#define REDIS_QUEUE_NAME_FORMAT_PATTERN "timeout_queue#*"
+
 
 /*
 * dehydrator.push <element_id> <element> <timeout>
@@ -38,12 +40,12 @@ int PushCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
 
     // make sure we have the queue listed
     RedisModuleCallReply *srep =
-        RedisModule_Call(ctx, "HSET", REDIS_QUEUE_MAP, element_id, timeout);
+        RedisModule_Call(ctx, "HSET", "css", REDIS_QUEUE_MAP, element_id, timeout);
     RMUTIL_ASSERT_NOERROR(srep);
 
     // add the element to the dehydrating elements map
     RedisModuleCallReply *srep =
-        RedisModule_Call(ctx, "HSET", REDIS_ELEMENT_MAP, element_id, element);
+        RedisModule_Call(ctx, "HSET", "css", REDIS_ELEMENT_MAP, element_id, element);
     RMUTIL_ASSERT_NOERROR(srep);
 
 
@@ -53,7 +55,7 @@ int PushCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
 
     // add the element to the element expiration hash
     RedisModuleCallReply *srep =
-        RedisModule_Call(ctx, "HSETNX", REDIS_EXPIRATION_MAP, element_id, expiration);
+        RedisModule_Call(ctx, "HSETNX", "csl", REDIS_EXPIRATION_MAP, element_id, expiration);
     RMUTIL_ASSERT_NOERROR(srep);
 
 
@@ -61,43 +63,11 @@ int PushCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     char dehydration_queue_name[30];
     sprintf(dehydration_queue_name, REDIS_QUEUE_NAME_FORMAT, timeout);
     RedisModuleCallReply *srep =
-        RedisModule_Call(ctx, "RPUSH", , element_id, expiration);
+        RedisModule_Call(ctx, "RPUSH", "csl", dehydration_queue_name, element_id, expiration);
     RMUTIL_ASSERT_NOERROR(srep);
     free(dehydration_queue_name);
 
     return 0;
-}
-
-
-int PollCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    // we need EXACTLY 4 arguments  TODO: make sure what is in argv[0]
-    if (argc != 4) {
-      return RedisModule_WrongArity(ctx);
-    }
-
-
-    element_id = argv[1]
-    element = argv[2]
-    timeout = argv[3]
-
-
-
-    RedisModule_AutoMemory(ctx);
-    /**
-    Register the element to wait the timeout (in seconds),
-    then add it to the queue.
-    **/
-
-
-  // if the value was null before - we just return null
-  if (RedisModule_CallReplyType(rep) == REDISMODULE_REPLY_NULL) {
-    RedisModule_ReplyWithNull(ctx);
-    return REDISMODULE_OK;
-  }
-
-  // forward the HGET reply to the client
-  RedisModule_ReplyWithCallReply(ctx, rep);
-  return REDISMODULE_OK;
 }
 
 /*
@@ -105,7 +75,15 @@ int PollCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
 * get all elements which were dried for long enogh
 */
 int PollCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-        timeouts = self._redis.keys(pattern=RedisDehydrator.REDIS_QUEUE_NAME_FORMAT % "*")
+    RedisModuleCallReply *rep =
+        RedisModule_Call(ctx, "KEYS", "c" ,REDIS_QUEUE_NAME_FORMAT_PATTERN);
+    RMUTIL_ASSERT_NOERROR(rep); 
+    timeouts = REDISMODULE_REPLY_ARRAY(rep)
+    size_t timeout_num = RedisModule_CallReplyLength(rep)
+
+
+
+
         // print "timeouts: ", timeouts
         while timeouts:
             //Pull next item for all timeouts (effeciently)
