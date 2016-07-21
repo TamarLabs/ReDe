@@ -26,29 +26,15 @@
 *
 */
 int PushCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-
-  // we need EXACTLY 4 arguments  TODO: make sure what is in argv[0]
-  if (argc != 4) {
-    return RedisModule_WrongArity(ctx);
-  }
-  RedisModule_AutoMemory(ctx);
-
-
-  def push(self, element, timeout):
-      """
-      Register the element to wait the timeout (in seconds),
-      then add it to the queue.
-      """
-
-      self._pipe.hsetnx(RedisDehydrator., element_id, )
-      self._pipe.rpush(RedisDehydrator. % timeout, element_id)
-      self._pipe.execute()
-
-
-  // // get the current value of the hash element
-  // RedisModuleCallReply *rep =
-  //     RedisModule_Call(ctx, "HGET", "ss", argv[1], argv[2]);
-  // RMUTIL_ASSERT_NOERROR(rep);
+    // we need EXACTLY 4 arguments  TODO: make sure what is in argv[0]
+    if (argc != 4) {
+      return RedisModule_WrongArity(ctx);
+    }
+    RedisModule_AutoMemory(ctx);
+    /**
+    Register the element to wait the timeout (in seconds),
+    then add it to the queue.
+    **/
 
 
     element_id = argv[1]
@@ -82,6 +68,29 @@ int PushCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
         RedisModule_Call(ctx, "RPUSH", , element_id, expiration);
     RMUTIL_ASSERT_NOERROR(srep);
     free(dehydration_queue_name);
+
+    return 0;
+}
+
+
+int PollCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+    // we need EXACTLY 4 arguments  TODO: make sure what is in argv[0]
+    if (argc != 4) {
+      return RedisModule_WrongArity(ctx);
+    }
+
+
+    element_id = argv[1]
+    element = argv[2]
+    timeout = argv[3]
+
+
+
+    RedisModule_AutoMemory(ctx);
+    /**
+    Register the element to wait the timeout (in seconds),
+    then add it to the queue.
+    **/
 
 
   // if the value was null before - we just return null
@@ -132,7 +141,7 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx) {
   RMUtil_RegisterWriteCmd(ctx, "dehydrator.push", PushCommand);
 
   // registerdehydrator.pull - using the shortened utility registration macro
-  RMUtil_RegisterWriteCmd(ctx, "dehydrator.pull", PullCommand);
+  // RMUtil_RegisterWriteCmd(ctx, "dehydrator.pull", PullCommand);
 
   // registerdehydrator.poll - using the shortened utility registration macro
   RMUtil_RegisterWriteCmd(ctx, "dehydrator.poll", PollCommand);
