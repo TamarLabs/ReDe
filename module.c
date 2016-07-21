@@ -22,8 +22,7 @@
 
 /*
 * dehydrator.push <element_id> <element> <timeout>
-* Atomically dehydrate <element> for <timeout> seconds
-*
+* dehydrate <element> for <timeout> seconds
 */
 int PushCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     // we need EXACTLY 4 arguments  TODO: make sure what is in argv[0]
@@ -31,37 +30,34 @@ int PushCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
       return RedisModule_WrongArity(ctx);
     }
     RedisModule_AutoMemory(ctx);
-    /**
-    Register the element to wait the timeout (in seconds),
-    then add it to the queue.
-    **/
-
 
     element_id = argv[1]
     element = argv[2]
     timeout = argv[3]
 
 
-    // set the new value of the element
+    // make sure we have the queue listed
     RedisModuleCallReply *srep =
         RedisModule_Call(ctx, "HSET", REDIS_QUEUE_MAP, element_id, timeout);
     RMUTIL_ASSERT_NOERROR(srep);
 
-    // set the new value of the element
+    // add the element to the dehydrating elements map
     RedisModuleCallReply *srep =
         RedisModule_Call(ctx, "HSET", REDIS_ELEMENT_MAP, element_id, element);
     RMUTIL_ASSERT_NOERROR(srep);
 
-    // set the new value of the element
-    RedisModuleCallReply *srep =
-        RedisModule_Call(ctx, "HSETNX", REDIS_EXPIRATION_MAP, element_id, int(time.time() + timeout));
-    RMUTIL_ASSERT_NOERROR(srep);
 
     time_t result = time(NULL);
     // if(result != -1) //TODO: this seatbelt may be needed
     expiration = (uintmax_t)result + timeout;
 
-    // set the new value of the element
+    // add the element to the element expiration hash
+    RedisModuleCallReply *srep =
+        RedisModule_Call(ctx, "HSETNX", REDIS_EXPIRATION_MAP, element_id, expiration);
+    RMUTIL_ASSERT_NOERROR(srep);
+
+
+    // add the elemet id to the actual dehydration queue
     char dehydration_queue_name[30];
     sprintf(dehydration_queue_name, REDIS_QUEUE_NAME_FORMAT, timeout);
     RedisModuleCallReply *srep =
@@ -92,6 +88,74 @@ int PollCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     then add it to the queue.
     **/
 
+
+  // if the value was null before - we just return null
+  if (RedisModule_CallReplyType(rep) == REDISMODULE_REPLY_NULL) {
+    RedisModule_ReplyWithNull(ctx);
+    return REDISMODULE_OK;
+  }
+
+  // forward the HGET reply to the client
+  RedisModule_ReplyWithCallReply(ctx, rep);
+  return REDISMODULE_OK;
+}
+
+/*
+* dehydrator.poll 
+* get all elements which were dried for long enogh
+*/
+int PollCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+        timeouts = self._redis.keys(pattern=RedisDehydrator.REDIS_QUEUE_NAME_FORMAT % "*")
+        // print "timeouts: ", timeouts
+        while timeouts:
+            //Pull next item for all timeouts (effeciently)
+            for timeout in timeouts:
+                self._pipe.lpop(timeout)
+            items = self._pipe.execute()
+            // print "items: ", items
+            // print "timeouts: ",list(timeouts)
+      elements = []
+      next_timeouts = set()
+            for timeout, element_id in zip(timeouts, items):
+                if element_id:
+          element = self._inspect(element_id, self._queue_to_int(timeout))
+                    if element is not None:
+                        # element was rehydrated, return to this queue to see if
+                        # there are more rehydratable elements
+            elements.append(element)
+                        // print "%s returned" % element
+                        next_timeouts.add(timeout)
+                    else:
+                        # this element needs to dehydrate longer, push it back
+                        # to the front of the queue
+                        // print "%s inspect is false" % element_id
+                        self._pipe.lpush(timeout, element_id)
+            self._pipe.execute()
+            timeouts = next_timeouts
+
+    return elements
+
+
+  RedisModule_AutoMemory(ctx);
+
+
+  // open the key and make sure it's indeed a HASH and not empty
+  RedisModuleKey *key =
+      RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ | REDISMODULE_WRITE);
+  if (RedisModule_KeyType(key) != REDISMODULE_KEYTYPE_HASH &&
+      RedisModule_KeyType(key) != REDISMODULE_KEYTYPE_EMPTY) {
+    return RedisModule_ReplyWithError(ctx, REDISMODULE_ERRORMSG_WRONGTYPE);
+  }
+
+  // get the current value of the hash element
+  RedisModuleCallReply *rep =
+      RedisModule_Call(ctx, "HGET", "ss", argv[1], argv[2]);
+  RMUTIL_ASSERT_NOERROR(rep);
+
+  // set the new value of the element
+  RedisModuleCallReply *srep =
+      RedisModule_Call(ctx, "HSET", "sss", argv[1], argv[2], argv[3]);
+  RMUTIL_ASSERT_NOERROR(srep);
 
   // if the value was null before - we just return null
   if (RedisModule_CallReplyType(rep) == REDISMODULE_REPLY_NULL) {
