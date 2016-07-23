@@ -26,9 +26,11 @@
 * dehydrator.push <element_id> <element> <timeout>
 * dehydrate <element> for <timeout> seconds
 */
-int PushCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+int PushCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
+{
     // we need EXACTLY 4 arguments  TODO: make sure what is in argv[0]
-    if (argc != 4) {
+    if (argc != 4)
+    {
       return RedisModule_WrongArity(ctx);
     }
     RedisModule_AutoMemory(ctx);
@@ -63,53 +65,91 @@ int PushCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     char dehydration_queue_name[30];
     sprintf(dehydration_queue_name, REDIS_QUEUE_NAME_FORMAT, timeout);
     RedisModuleCallReply *srep =
-        RedisModule_Call(ctx, "RPUSH", "csl", dehydration_queue_name, element_id, expiration);
+        RedisModule_Call(ctx, "RPUSH", "cs", dehydration_queue_name, element_id);
     RMUTIL_ASSERT_NOERROR(srep);
-    free(dehydration_queue_name);
+    free(dehydration_queue_name);//TODO: is this needed?
 
     return 0;
 }
 
+
+RedisModuleCallReply _get_time_out_queues(RedisModuleCtx *ctx)
+{
+    RedisModuleCallReply *rep =
+        RedisModule_Call(ctx, "KEYS", "c", REDIS_QUEUE_NAME_FORMAT_PATTERN);
+    RMUTIL_ASSERT_NOERROR(rep);
+    return rep
+}
+
+
+RedisModuleString* _inspect(element_id, timeout)
+{
+    expiration = self._redis.hget(RedisDehydrator.REDIS_EXPIRATION_MAP, element_id)
+    if expiration and  (int(expiration) <= time.time()):
+        return self.pull(element_id)
+    return NULL
+}
+
+
+int _queue_to_int(char* queue_name)
+{
+    sscanf(queue_name, REDIS_QUEUE_NAME_FORMAT, &num_str)
+    return num_str
+}
+
 /*
-* dehydrator.poll 
+* dehydrator.poll
 * get all elements which were dried for long enogh
 */
-int PollCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    RedisModuleCallReply *rep =
-        RedisModule_Call(ctx, "KEYS", "c" ,REDIS_QUEUE_NAME_FORMAT_PATTERN);
-    RMUTIL_ASSERT_NOERROR(rep); 
-    timeouts = REDISMODULE_REPLY_ARRAY(rep)
-    size_t timeout_num = RedisModule_CallReplyLength(rep)
+int PollCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) //TODO: this should return a list of elements
+{
+    RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
+    expired_element_num = 0
+    RedisModuleCallReply *rep = _get_time_out_queues(ctx);
+    size_t timeout_num = RedisModule_CallReplyLength(rep);
+    timeouts = REDISMODULE_REPLY_ARRAY(rep); //TODO: this line is incorrect
+
+    while (timeout_num > 0)
+    {
+        next_timeouts = set()
+        int next_timeouts_num = 0
+        //Pull next item for all timeouts (effeciently)
+        for (i=0; i<timeout_num; i++)
+        {
+            timeout_queue = RedisModule_CallReplyArrayElement(timeouts, i);
+            RedisModuleCallReply *srep =
+                RedisModule_Call(ctx, "LPOP", "c", dehydration_queue_name);
+            RMUTIL_ASSERT_NOERROR(srep);
+
+            char* element_id = RedisModule_CallReplyStringPtr(srep);
+            RedisModuleString *element = _inspect(element_id, _queue_to_int(timeout));
+
+
+                                if element is not None:
+                                    # element was rehydrated, return to this queue to see if
+                                    # there are more rehydratable elements
+                                    elements.append(element)
+                                    // print "%s returned" % element
+                                    next_timeouts.add(timeout)
+                                else:
+                                    # this element needs to dehydrate longer, push it back
+                                    # to the front of the queue
+                                    // print "%s inspect is false" % element_id
+                                    self._pipe.lpush(timeout, element_id)
 
 
 
+            expired_element_num++;
+            RedisModule_ReplyWithString(ctx, element);//TODO: reply with the actual elemet type
+        }
 
-        // print "timeouts: ", timeouts
-        while timeouts:
-            //Pull next item for all timeouts (effeciently)
-            for timeout in timeouts:
-                self._pipe.lpop(timeout)
-            items = self._pipe.execute()
-            // print "items: ", items
-            // print "timeouts: ",list(timeouts)
-      elements = []
-      next_timeouts = set()
-            for timeout, element_id in zip(timeouts, items):
-                if element_id:
-          element = self._inspect(element_id, self._queue_to_int(timeout))
-                    if element is not None:
-                        # element was rehydrated, return to this queue to see if
-                        # there are more rehydratable elements
-            elements.append(element)
-                        // print "%s returned" % element
-                        next_timeouts.add(timeout)
-                    else:
-                        # this element needs to dehydrate longer, push it back
-                        # to the front of the queue
-                        // print "%s inspect is false" % element_id
-                        self._pipe.lpush(timeout, element_id)
-            self._pipe.execute()
-            timeouts = next_timeouts
+        timeouts = next_timeouts
+        timeout_num = next_timeouts_num
+    }
+    RedisModule_ReplySetArrayLength(ctx, expired_element_num);
+
+    return 0
+}
 
     return elements
 
