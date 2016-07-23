@@ -24,10 +24,18 @@
 // Format of the dehydration flag (for sanity)
 #define REDIS_SET_DEHYDRATED_ELEMENTS_FORMAT "%s:element_dehydrating"
 
+RedisModuleString * _format_single_redis_module_string(RedisModuleCtx *ctx, const char* format, RedisModuleString *str)
+{
+    const char *c;
+    size_t len;
+    c = RedisModule_StringPtrLen(str, &len);
+    return RMUtil_CreateFormattedString(ctx, format, c);
+}
 
 RedisModuleCallReply * _test_is_element_dehydrating_now(RedisModuleCtx *ctx, RedisModuleString *element_id)
 {
-    RedisModuleString * element_dehydrating_key = RMUtil_CreateFormattedString(ctx, REDIS_SET_DEHYDRATED_ELEMENTS_FORMAT, element_id);
+    RedisModuleString * element_dehydrating_key =
+        _format_single_redis_module_string(ctx, REDIS_SET_DEHYDRATED_ELEMENTS_FORMAT, element_id);
     RedisModuleCallReply *rep =
         RedisModule_Call(ctx, "EXISTS", "s", element_dehydrating_key);
     RMUTIL_ASSERT_NOERROR(rep);
@@ -42,7 +50,8 @@ bool _is_dehydrating(RedisModuleCtx *ctx, RedisModuleString *element_id)
 
 void _set_element_dehydrating(RedisModuleCtx *ctx, RedisModuleString *element_id)
 {
-    RedisModuleString * element_dehydrating_key = RMUtil_CreateFormattedString(ctx, REDIS_SET_DEHYDRATED_ELEMENTS_FORMAT, element_id);
+    RedisModuleString * element_dehydrating_key =
+        _format_single_redis_module_string(ctx, REDIS_SET_DEHYDRATED_ELEMENTS_FORMAT, element_id);
     RedisModuleCallReply *rep =
         RedisModule_Call(ctx, "SET", "sl", element_dehydrating_key, 1);
     RMUTIL_ASSERT_NOERROR(rep);
@@ -50,7 +59,8 @@ void _set_element_dehydrating(RedisModuleCtx *ctx, RedisModuleString *element_id
 
 void _unset_element_dehydrating(RedisModuleCtx *ctx, RedisModuleString *element_id)
 {
-    RedisModuleString * element_dehydrating_key = RMUtil_CreateFormattedString(ctx, REDIS_SET_DEHYDRATED_ELEMENTS_FORMAT, element_id);
+    RedisModuleString * element_dehydrating_key =
+        _format_single_redis_module_string(ctx, REDIS_SET_DEHYDRATED_ELEMENTS_FORMAT, element_id);
     RedisModuleCallReply *rep =
         RedisModule_Call(ctx, "DEL", "s", element_dehydrating_key);
     RMUTIL_ASSERT_NOERROR(rep);
@@ -59,7 +69,8 @@ void _unset_element_dehydrating(RedisModuleCtx *ctx, RedisModuleString *element_
 void clear(self)
 {
     // CAREFUL! (for testing purposes only)
-    RedisModuleString * element_dehydrating_key = RMUtil_CreateFormattedString(ctx, REDIS_SET_DEHYDRATED_ELEMENTS_FORMAT, element_id);
+    RedisModuleString * element_dehydrating_key =
+        _format_single_redis_module_string(ctx, REDIS_SET_DEHYDRATED_ELEMENTS_FORMAT, element_id);
     RedisModuleCallReply *rep =
         RedisModule_Call(ctx, "FLUSHALL");
     RMUTIL_ASSERT_NOERROR(rep);
@@ -133,7 +144,7 @@ int PushCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 
 
     // add the elemet id to the actual dehydration queue
-    RedisModuleString * dehydration_queue_name = RMUtil_CreateFormattedString(ctx, REDIS_QUEUE_NAME_FORMAT, timeout);
+    RedisModuleString * dehydration_queue_name = _format_single_redis_module_string(ctx, REDIS_QUEUE_NAME_FORMAT, timeout);
     RedisModuleCallReply *srep =
         RedisModule_Call(ctx, "RPUSH", "ss", dehydration_queue_name, element_id);
     RMUTIL_ASSERT_NOERROR(srep);
@@ -225,7 +236,7 @@ RedisModuleString* _inspect(RedisModuleCtx *ctx, RedisModuleString * element_id,
 * dehydrator.poll
 * get all elements which were dried for long enogh
 */
-int PollCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) //TODO: this should return a list of elements
+int PollCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 {
     if (argc != 1)
     {
