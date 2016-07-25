@@ -308,19 +308,89 @@ int testHgetSet(RedisModuleCtx *ctx) {
   return REDISMODULE_OK;
 }
 
+
+int TestIsDehydrating(RedisModuleCtx *ctx)
+{
+    // TODO: stub; write me
+    return REDISMODULE_OK;
+}
+
+
+int TestPush(RedisModuleCtx *ctx)
+{
+    // TODO: stub; write me
+    return REDISMODULE_OK;
+}
+
+
+int TestPull(RedisModuleCtx *ctx)
+{
+    // TODO: stub; write me
+    return REDISMODULE_OK;
+}
+
+
+int TestPoll(RedisModuleCtx *ctx)
+{
+    // def test_dehydrator():
+    //     d = RedisDehydratorService()
+    //     d.clear()
+    //     q = DummyCallback()
+    //     d._callback_queue = q
+    //
+    //     print "push questions 1,7 & 3a (for 1,7 & 3 seconds)"
+    //     d.push(DummyQuestion("test_question1"),1)
+    //     d.push(DummyQuestion("test_question7"),7)
+    //     d.push(DummyQuestion("test_question3a"),3)
+    //     print "pull question 7"
+    //     d.pull("test_question7")
+    //     print "poll - make sure no question pops right out"
+    //     d.poll()
+    //     assert(len(q.q) == 0)
+    //     print "sleep 1"
+    //     time.sleep(1)
+    //     print "push question 3b (for 3 seconds)"
+    //     d.push(DummyQuestion("test_question3b"),3)
+    //     print "poll (t=1) - we expect only question 1 to pop out"
+    //     d.poll()
+    //     print str(q.q)
+    //     assert(len(q.q) == 1)
+    //     assert(q.q[0] == "test_question1")
+    //     print "sleep 2 and poll (t=3) - we expect question 3a to pop out"
+    //     time.sleep(2)
+    //     d.poll()
+    //     assert(len(q.q) == 2)
+    //     assert(q.q[1] == "test_question3a")
+    //     print "sleep 2 and poll (t=5) - we expect question 3b to pop out"
+    //     time.sleep(2)
+    //     d.poll()
+    //     assert(len(q.q) == 3)
+    //     assert(q.q[2] == "test_question3b")
+    //     print "sleep 6"
+    //     time.sleep(6)
+    //     print "poll (t=11) - we expect that question 7 will NOT pop out, because we already pulled it"
+    //     d.poll()
+    //     assert(len(q.q) == 3)
+    //     d.clear()
+}
+
+
 // Unit test entry point for the module
-int TestModule(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+int TestModule(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
+{
   RedisModule_AutoMemory(ctx);
 
-  RMUtil_Test(testParse);
-  RMUtil_Test(testHgetSet);
+  RMUtil_Test(TestPush);
+  RMUtil_Test(TestIsDehydrating);
+  RMUtil_Test(TestPull);
+  RMUtil_Test(TestPoll);
 
   RedisModule_ReplyWithSimpleString(ctx, "PASS");
   return REDISMODULE_OK;
 }
 
-int RedisModule_OnLoad(RedisModuleCtx *ctx) {
 
+int RedisModule_OnLoad(RedisModuleCtx *ctx) {
     // Register the module itself
     if (RedisModule_Init(ctx, "dehydrator", 1, REDISMODULE_APIVER_1) ==
       REDISMODULE_ERR) {
@@ -340,8 +410,8 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx) {
     RMUtil_RegisterReadCmd(ctx, "dehydrator.isDehydrating", IsDehydratingCommand);
 
 
-  // register the unit test
-  RMUtil_RegisterWriteCmd(ctx, "dehydrator.test", TestModule);
+   // register the unit test
+   RMUtil_RegisterWriteCmd(ctx, "dehydrator.test", TestModule);
 
   return REDISMODULE_OK;
 }
