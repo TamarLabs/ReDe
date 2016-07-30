@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <time.h>
 #include <stdint.h>
+#include <stdbool.h>
 
 //Name of a hash-map mapping element IDs to queue timeouts (integers)
 #define REDIS_QUEUE_MAP "element_queues"
@@ -41,14 +42,14 @@ RedisModuleCallReply * _test_is_element_dehydrating_now(RedisModuleCtx *ctx, Red
     RedisModuleCallReply *rep =
         RedisModule_Call(ctx, "EXISTS", "s", element_dehydrating_key);
     RMUTIL_ASSERT_NOERROR(rep);
-    return rep
+    return rep;
 }
 
 
-bool _is_dehydrating(RedisModuleCtx *ctx, RedisModuleString *element_id)
+int _is_dehydrating(RedisModuleCtx *ctx, RedisModuleString *element_id)
 {
-    RedisModuleCallReply * response = _test_is_element_dehydrating_now(ctx, argv[1]);
-    return (RedisModule_CallReplyInteger(response) == 1)
+    RedisModuleCallReply * response = _test_is_element_dehydrating_now(ctx, element_id);
+    return (RedisModule_CallReplyInteger(response) == 1);
 }
 
 
@@ -72,24 +73,21 @@ void _unset_element_dehydrating(RedisModuleCtx *ctx, RedisModuleString *element_
 }
 
 
-void clear()
+void clear(RedisModuleCtx *ctx)
 {
     // CAREFUL! (for testing purposes only)
-    RedisModuleString * element_dehydrating_key =
-        _format_single_redis_module_string(ctx, REDIS_SET_DEHYDRATED_ELEMENTS_FORMAT, element_id);
     RedisModuleCallReply *rep =
-        RedisModule_Call(ctx, "FLUSHALL");
+        RedisModule_Call(ctx, "FLUSHALL", "");
     RMUTIL_ASSERT_NOERROR(rep);
 }
 
 
 bool _test_set_is_element_dehydrating_now(RedisModuleCtx *ctx, RedisModuleString *element_id)
 {
-    if (_is_dehydrating(element_id))
-        return true
-    _set_element_dehydrating(element_id)
-    return false
-
+    if (_is_dehydrating(ctx ,element_id))
+        return true;
+    _set_element_dehydrating(ctx, element_id);
+    return false;
 }
 
 
@@ -101,7 +99,7 @@ int IsDehydratingCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc
     }
     RedisModule_AutoMemory(ctx);
     RedisModuleCallReply * response = _test_is_element_dehydrating_now(ctx, argv[1]);
-    RedisModule_ReplyWithCallReply(ctx, response)
+    RedisModule_ReplyWithCallReply(ctx, response);
     return REDISMODULE_OK;
 }
 
@@ -119,11 +117,11 @@ int PushCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     }
     RedisModule_AutoMemory(ctx);
 
-    element_id = argv[1];
-    element = argv[2];
-    timeout = argv[3];
+    RedisModuleString * element_id = argv[1];
+    RedisModuleString * element = argv[2];
+    RedisModuleString * timeout = argv[3];
 
-    if (_test_set_is_element_dehydrating_now(element_id))
+    if (_test_set_is_element_dehydrating_now(ctx, element_id))
     {
         //return RedisModule_ReplyWithError(ctx, "ERROR: Element already dehydrating.");
         RedisModule_ReplyWithError(ctx, "ERROR: Element already dehydrating.");
@@ -137,25 +135,24 @@ int PushCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     RMUTIL_ASSERT_NOERROR(srep);
 
     // add the element to the dehydrating elements map
-    RedisModuleCallReply *srep =
-        RedisModule_Call(ctx, "HSET", "css", REDIS_ELEMENT_MAP, element_id, element);
+    srep = RedisModule_Call(ctx, "HSET", "css", REDIS_ELEMENT_MAP, element_id, element);
     RMUTIL_ASSERT_NOERROR(srep);
 
 
     time_t result = time(NULL);
     // if(result != -1) //TODO: this seatbelt may be needed
-    expiration = (uintmax_t)result + timeout;
+    int timeout_int;
+    RMUTIL_ASSERT_NOERROR(RedisModule_StringToLongLong(timeout, &timeout_int));
+    int expiration = (uintmax_t)result + timeout_int;
 
     // add the element to the element expiration hash
-    RedisModuleCallReply *srep =
-        RedisModule_Call(ctx, "HSETNX", "csl", REDIS_EXPIRATION_MAP, element_id, expiration);
+    srep = RedisModule_Call(ctx, "HSETNX", "csl", REDIS_EXPIRATION_MAP, element_id, expiration);
     RMUTIL_ASSERT_NOERROR(srep);
 
 
     // add the elemet id to the actual dehydration queue
     RedisModuleString * dehydration_queue_name = _format_single_redis_module_string(ctx, REDIS_QUEUE_NAME_FORMAT, timeout);
-    RedisModuleCallReply *srep =
-        RedisModule_Call(ctx, "RPUSH", "ss", dehydration_queue_name, element_id);
+    srep = RedisModule_Call(ctx, "RPUSH", "ss", dehydration_queue_name, element_id);
     RMUTIL_ASSERT_NOERROR(srep);
 
     return REDISMODULE_OK;
@@ -165,12 +162,12 @@ int PushCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 RedisModuleString* _pull(RedisModuleCtx *ctx, RedisModuleString * element_id, RedisModuleString * timeout_queue)
 {
 
-    RedisModuleString *element = NULL
+    RedisModuleString *element = NULL;
     // pulling out from dehydrator element <element_id>
     RedisModuleCallReply *rep =
         RedisModule_Call(ctx, "HGET", "cs", REDIS_ELEMENT_MAP, element_id);
     RMUTIL_ASSERT_NOERROR(rep);
-    RedisModuleString *element = RedisModule_CreateStringFromCallReply(rep)
+    element = RedisModule_CreateStringFromCallReply(rep);
 
     if (timeout_queue == NULL)
     {
@@ -186,21 +183,17 @@ RedisModuleString* _pull(RedisModuleCtx *ctx, RedisModuleString * element_id, Re
         RedisModule_Call(ctx, "HDEL", "cs", REDIS_ELEMENT_MAP, element_id);
     RMUTIL_ASSERT_NOERROR(rep);
 
-    RedisModuleCallReply *rep =
-        RedisModule_Call(ctx, "HDEL", "cs", REDIS_QUEUE_MAP, element_id);
+    rep = RedisModule_Call(ctx, "HDEL", "cs", REDIS_QUEUE_MAP, element_id);
     RMUTIL_ASSERT_NOERROR(rep);
 
-    RedisModuleCallReply *rep =
-        RedisModule_Call(ctx, "HDEL", "cs", REDIS_EXPIRATION_MAP, element_id);
+    rep = RedisModule_Call(ctx, "HDEL", "cs", REDIS_EXPIRATION_MAP, element_id);
     RMUTIL_ASSERT_NOERROR(rep);
 
-    RedisModuleCallReply *rep =
-        RedisModule_Call(ctx, "LREM", "cs", timeout_queue, element_id);
+    rep = RedisModule_Call(ctx, "LREM", "cs", timeout_queue, element_id);
     RMUTIL_ASSERT_NOERROR(rep);
 
-    _unset_element_dehydrating(element_id)
-    return element
-
+    _unset_element_dehydrating(ctx, element_id);
+    return element;
 }
 
 
@@ -226,13 +219,13 @@ RedisModuleString* _inspect(RedisModuleCtx *ctx, RedisModuleString * element_id,
     RedisModuleCallReply *srep =
         RedisModule_Call(ctx, "HGET", "cs", REDIS_EXPIRATION_MAP, element_id);
     RMUTIL_ASSERT_NOERROR(srep);
-    expiration = RedisModule_CallReplyInteger(srep)
+    int expiration = RedisModule_CallReplyInteger(srep);
     time_t result = time(NULL);
     // if(result != -1) //TODO: this seatbelt may be needed
-    now = (uintmax_t)result;
-    if expiration and  (expiration <= now):
-        return _pull(element_id, timeout_queue)
-    return NULL
+    uintmax_t now = (uintmax_t)result;
+    if (expiration > 0 && (expiration <= now))
+        return _pull(ctx, element_id, timeout_queue);
+    return NULL;
 }
 
 
@@ -257,7 +250,7 @@ int PollCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     {
 
         RedisModuleCallReply *timeouts_reply = RedisModule_CallReplyArrayElement(rep, i);
-        RedisModuleString * timeout_queue =
+        RedisModuleString * timeout_queue = RedisModule_CreateStringFromCallReply(timeouts_reply);
         bool should_pop_next = true;
         while (should_pop_next)
         {
@@ -349,11 +342,11 @@ int TestPoll(RedisModuleCtx *ctx)
   RMUtil_Assert(RedisModule_CallReplyType(push3a) != REDISMODULE_REPLY_ERROR);
 
   printf("pull question 7")
-  RedisModuleCallReply *pull7_rep =
+  RedisModuleCallReply *pull_seven_rep =
       RedisModule_Call(ctx, "dehydrator.pull", "e7");
-  RMUtil_Assert(RedisModule_CallReplyType(pull7_rep) != REDISMODULE_REPLY_ERROR);
+  RMUtil_Assert(RedisModule_CallReplyType(pull_seven_rep) != REDISMODULE_REPLY_ERROR);
 
-  printf("poll - make sure no element pops right out")
+  printf("poll - make sure no element pops right out");
   RedisModuleCallReply *poll1_rep =
       RedisModule_Call(ctx, "dehydrator.poll");
   RMUtil_Assert(RedisModule_CallReplyType(poll1_rep) != REDISMODULE_REPLY_ERROR);
@@ -373,28 +366,28 @@ int TestPoll(RedisModuleCtx *ctx)
       RedisModule_Call(ctx, "dehydrator.poll");
   RMUtil_Assert(RedisModule_CallReplyType(poll2_rep) != REDISMODULE_REPLY_ERROR);
   RMUtil_Assert(RedisModule_CallReplyLength(poll2_rep) == 1);
-  RedisModuleCallReply *subreply1 = RedisModule_CallReplyArrayElement(reply, 0);
+  RedisModuleCallReply *subreply1 = RedisModule_CallReplyArrayElement(poll2_rep, 0);
   RMUtil_AssertReplyEquals(subreply1, "element_1")
 
-  
+
   printf("sleep 2 secs and poll (t=3) - we expect only element 3a to pop out")
   sleep(2)
   RedisModuleCallReply *poll3_rep =
       RedisModule_Call(ctx, "dehydrator.poll");
   RMUtil_Assert(RedisModule_CallReplyType(poll3_rep) != REDISMODULE_REPLY_ERROR);
   RMUtil_Assert(RedisModule_CallReplyLength(poll3_rep) == 1);
-  RedisModuleCallReply *subreply2 = RedisModule_CallReplyArrayElement(reply, 0);
+  RedisModuleCallReply *subreply2 = RedisModule_CallReplyArrayElement(poll3_rep, 0);
   RMUtil_AssertReplyEquals(subreply2, "element_3a")
 
-  
+
   printf("sleep 2 secs and poll (t=5) - we expect elements 4 and 3b to pop out")
   sleep(2)
   RedisModuleCallReply *poll4_rep =
       RedisModule_Call(ctx, "dehydrator.poll");
   RMUtil_Assert(RedisModule_CallReplyType(poll4_rep) != REDISMODULE_REPLY_ERROR);
   RMUtil_Assert(RedisModule_CallReplyLength(poll4_rep) == 2);
-  RedisModuleCallReply *subreply3_0 = RedisModule_CallReplyArrayElement(reply, 0);
-  RedisModuleCallReply *subreply3_1 = RedisModule_CallReplyArrayElement(reply, 1);
+  RedisModuleCallReply *subreply3_0 = RedisModule_CallReplyArrayElement(poll4_rep, 0);
+  RedisModuleCallReply *subreply3_1 = RedisModule_CallReplyArrayElement(poll4_rep, 1);
   RMUtil_AssertReplyEquals(subreply3_0, "element_3b")
   RMUtil_AssertReplyEquals(subreply3_1, "element_4")
 
@@ -447,8 +440,8 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx) {
     RMUtil_RegisterReadCmd(ctx, "dehydrator.isDehydrating", IsDehydratingCommand);
 
 
-   // register the unit test
-   RMUtil_RegisterWriteCmd(ctx, "dehydrator.test", TestModule);
+    // register the unit test
+    RMUtil_RegisterWriteCmd(ctx, "dehydrator.test", TestModule);
 
-  return REDISMODULE_OK;
+    return REDISMODULE_OK;
 }
