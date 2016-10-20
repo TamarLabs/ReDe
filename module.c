@@ -468,8 +468,20 @@ int TestPoll(RedisModuleCtx *ctx)
   RMUtil_Assert(RedisModule_CallReplyLength(poll_four_rep) == 2);
   RedisModuleCallReply *subreply_c_first = RedisModule_CallReplyArrayElement(poll_four_rep, 0);
   RedisModuleCallReply *subreply_c_second = RedisModule_CallReplyArrayElement(poll_four_rep, 1);
-  RMUtil_AssertReplyEquals(subreply_c_first, "element_3b");
-  RMUtil_AssertReplyEquals(subreply_c_second, "element_4");
+  RedisModuleString * first_str =  RedisModule_CreateStringFromCallReply(subreply_c_first);
+  RedisModuleString * second_str = RedisModule_CreateStringFromCallReply(subreply_c_second)
+  RedisModuleString * element_3b_str = RedisModule_CreateString(ctx, "element_3b", strlen("element_3b"))
+  RedisModuleString * element_4_str = RedisModule_CreateString(ctx, "element_4", strlen("element_4"))
+  RMUtil_Assert(
+    (
+        RMUtil_StringEquals(first_str, element_3b_str) &&
+        RMUtil_StringEquals(second_str, element_4_str)
+    ) ||
+    (
+        RMUtil_StringEquals(first_str, element_4_str) &&
+        RMUtil_StringEquals(second_str, element_3b_str)
+    )
+  )
 
   // sleep 6 secs and poll (t=11) - we expect that element 7 will NOT pop out, because we already pulled it
   sleep(6);
