@@ -20,7 +20,7 @@
 #define REDIS_EXPIRATION_MAP "element_expiration"
 
 // Format of the queue name (for storage)
-#define REDIS_QUEUE_NAME_FORMAT "timeout_queue#%d"
+#define REDIS_QUEUE_NAME_FORMAT "timeout_queue#%s"
 #define REDIS_QUEUE_NAME_FORMAT_PATTERN "timeout_queue#*"
 
 // Format of the dehydration flag (for sanity)
