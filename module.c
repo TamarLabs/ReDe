@@ -160,11 +160,11 @@ int PushCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     srep = RedisModule_Call(ctx, "HSETNX", "csc", REDIS_EXPIRATION_MAP, element_id, buffer);
     RMUTIL_ASSERT_NOERROR(srep);
 
-
     // add the elemet id to the actual dehydration queue
     srep = RedisModule_Call(ctx, "RPUSH", "ss", dehydration_queue_name, element_id);
     RMUTIL_ASSERT_NOERROR(srep);
 
+    RedisModule_ReplyWithSimpleString(ctx, "OK");
     return REDISMODULE_OK;
 }
 
