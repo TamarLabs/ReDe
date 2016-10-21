@@ -84,11 +84,11 @@ def load_test_dehydrator(redis_service, cycles=100000, timeouts=[1,2,4,16,32,100
     start_i = 0
     end_i = cycles/3
     for j in range(3):
-        time.sleep(1)
         for i in range(start_i,end_i):
-            redis_service.execute_command("dehydrator.push", "%d" % i, "payload", random.choice([1,2,3]))
+            redis_service.execute_command("dehydrator.push", "%d" % i, "payload", (3-j+random.choice([1,2,3])))
         start_i += cycles/3
         end_i += cycles/3
+        time.sleep(1)
 
     print "measuring POLL"
     poll_sum = 0
