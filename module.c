@@ -318,8 +318,40 @@ int PollCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 
 int TestIsDehydrating(RedisModuleCtx *ctx)
 {
-  // TODO: stub; write me
-  return REDISMODULE_OK;
+    size_t len;
+    clear(ctx);
+    printf("Testing IsDehydrating - ");
+
+    RedisModuleCallReply *check1 =
+        RedisModule_Call(ctx, "dehydrator.isDehydrating", "c", "test_element");
+    RMUtil_Assert(RedisModule_CallReplyType(check1) != REDISMODULE_REPLY_ERROR);
+    // check if X is dehydtaring (should be false)
+    RMUtil_Assert(RedisModule_CallReplyInteger(check1) == 0);
+
+
+    RedisModuleCallReply *push1 =
+        RedisModule_Call(ctx, "dehydrator.push", "ccc", "test_element", "payload", "100");
+    RMUtil_Assert(RedisModule_CallReplyType(push1) != REDISMODULE_REPLY_ERROR);
+
+    RedisModuleCallReply *check2 =
+        RedisModule_Call(ctx, "dehydrator.isDehydrating", "c", "test_element");
+    RMUtil_Assert(RedisModule_CallReplyType(check2) != REDISMODULE_REPLY_ERROR);
+    RMUtil_Assert(RedisModule_CallReplyInteger(check2) == 1);
+
+
+    RedisModuleCallReply *pull1 =
+        RedisModule_Call(ctx, "dehydrator.pull", "c", "test_element");
+    RMUtil_Assert(RedisModule_CallReplyType(pull1) != REDISMODULE_REPLY_ERROR);
+
+    RedisModuleCallReply *check3 =
+        RedisModule_Call(ctx, "dehydrator.isDehydrating", "c", "test_element");
+    RMUtil_Assert(RedisModule_CallReplyType(check3) != REDISMODULE_REPLY_ERROR);
+    // check if X is dehydtaring (should be false)
+    RMUtil_Assert(RedisModule_CallReplyInteger(check1) == 0);
+
+    clear(ctx);
+    printf("Passed.\n");
+    return REDISMODULE_OK;
 }
 
 
@@ -499,15 +531,15 @@ int TestPoll(RedisModuleCtx *ctx)
 // Unit test entry point for the module
 int TestModule(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 {
-  RedisModule_AutoMemory(ctx);
+    RedisModule_AutoMemory(ctx);
 
-  RMUtil_Test(TestPush);
-  RMUtil_Test(TestIsDehydrating);
-  RMUtil_Test(TestPull);
-  RMUtil_Test(TestPoll);
+    RMUtil_Test(TestPush);
+    RMUtil_Test(TestPull);
+    RMUtil_Test(TestIsDehydrating);
+    RMUtil_Test(TestPoll);
 
-  RedisModule_ReplyWithSimpleString(ctx, "PASS");
-  return REDISMODULE_OK;
+    RedisModule_ReplyWithSimpleString(ctx, "PASS");
+    return REDISMODULE_OK;
 }
 
 
