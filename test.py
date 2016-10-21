@@ -2,6 +2,7 @@
 import redis
 import time
 import random
+import sys
 
 def helloworld(redis_service):
     # push some data into the dehydrator
@@ -28,10 +29,14 @@ def helloworld(redis_service):
 
 
 def run_internal_test(redis_service):
-    print("module internal test - %s " % redis_service.execute_command("dehydrator.test"))
+    sys.stdout.write("module functional test (internal) - ")
+    sys.stdout.flush()
+    print(redis_service.execute_command("dehydrator.test"))
 
 def function_test_dehydrator(redis_service):
     redis_service.flushall()
+    sys.stdout.write("module functional test (external) - ")
+    sys.stdout.flush()
     #  "push elements a,b & c (for 1,3 & 7 seconds)"
     redis_service.execute_command("dehydrator.push", "a", "test_element a", 1)
     redis_service.execute_command("dehydrator.push", "b", "test_element b",3)
@@ -56,7 +61,7 @@ def function_test_dehydrator(redis_service):
     t1_poll_result = redis_service.execute_command("dehydrator.poll")
     # (t1_poll_result)
     assert(len(t1_poll_result) == 1 and t1_poll_result[0] == "test_element c")
-    print("module functional test - PASS ")
+    print("PASS")
     redis_service.flushall()
 
 def load_test_dehydrator(redis_service, cycles=100000, timeouts=[1,2,4,16,32,100,200,1000]):
