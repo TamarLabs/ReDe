@@ -191,9 +191,6 @@ RedisModuleString * _pull(RedisModuleCtx *ctx, RedisModuleString * element_id, R
         {
             return NULL;
         }
-        const char *timeout_queue_c;
-        size_t len;
-        timeout_queue_c = RedisModule_StringPtrLen(timeout_queue, &len);
     }
 
     // Remove the element from this queue
