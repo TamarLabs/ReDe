@@ -51,7 +51,7 @@ RedisModuleString * _format_single_redis_module_string(RedisModuleCtx *ctx, cons
 
 bool _test_is_element_dehydrating_now(RedisModuleCtx *ctx, RedisModuleString *element_id)
 {
-    RedisModuleString * element_dehydrating_key =
+    RedisModuleKey * element_dehydrating_key =
         RedisModule_OpenKey(
             ctx,
             _format_single_redis_module_string(ctx, REDIS_SET_DEHYDRATED_ELEMENTS_FORMAT, element_id),
@@ -222,11 +222,11 @@ int PullCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 
 RedisModuleString * _inspect(RedisModuleCtx *ctx, RedisModuleString * element_id, RedisModuleString * timeout_queue)
 {
-    RedisModuleCallReply *srep =
-        RedisModule_Call(ctx, "HGET", "cs", REDIS_EXPIRATION_MAP, element_id);
-    RMUTIL_ASSERT_NOERROR(srep);
+    RedisModuleString * expiration_str;
+    RedisModuleKey* REDIS_EXPIRATION_MAP_key = OpenKeyC(ctx, REDIS_EXPIRATION_MAP, REDISMODULE_READ);
+    RedisModule_HashGet(REDIS_EXPIRATION_MAP_key, REDISMODULE_HASH_NONE, element_id, &expiration_str, NULL);
+    RedisModule_CloseKey(REDIS_EXPIRATION_MAP_key);
     long long expiration;
-    char* expiration_str = RedisModule_CreateStringFromCallReply(srep);
     RedisModule_StringToLongLong(expiration_str, &expiration);
     time_t result = time(NULL);
     uintmax_t now = (uintmax_t)result;
@@ -260,12 +260,12 @@ int PollCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 
         RedisModuleCallReply *timeouts_reply = RedisModule_CallReplyArrayElement(rep, i);
         RedisModuleString * timeout_queue = RedisModule_CreateStringFromCallReply(timeouts_reply);
+        RedisModuleKey * timeout_queue_key =
+            RedisModule_OpenKey(ctx, timeout_queue, REDISMODULE_WRITE);
         bool should_pop_next = true;
         while (should_pop_next)
         {
-            RedisModuleCallReply *sub_rep = RedisModule_Call(ctx, "LPOP", "s", timeout_queue);
-
-            RedisModuleString * element_id = RedisModule_CreateStringFromCallReply(sub_rep);
+            RedisModuleString * element_id = RedisModule_ListPop(timeout_queue_key , REDISMODULE_LIST_HEAD);
             if (element_id != NULL)
             {
                 RedisModuleString * element = _inspect(ctx, element_id, timeout_queue);
@@ -280,7 +280,7 @@ int PollCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
                 {
                     // this element needs to dehydrate longer, push it back
                     // to the front of the queue
-                    RedisModule_Call(ctx, "LPUSH", "ss", timeout_queue, element_id);
+                    RedisModule_ListPush(timeout_queue_key , REDISMODULE_LIST_HEAD, element_id);
                     should_pop_next = false;
                 }
             }
@@ -289,6 +289,7 @@ int PollCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
                 should_pop_next = false;
             }
         }
+        RedisModule_CloseKey(timeout_queue_key);
     }
 
     RedisModule_ReplySetArrayLength(ctx, expired_element_num);
