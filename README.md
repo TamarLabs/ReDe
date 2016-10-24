@@ -98,6 +98,12 @@ PASS
 Enjoy!
 
 
+## Future work
+
+* add pub/sub mechanism to POLL
+* add ability to have several different dehydrators (maybe as a new type)
+* a whole lot more
+
 ## About This Module
 
 This module is based off a python version of the same concepts developed in Tamar Labs by Adam Lev-Libfeld and Alexander Margolin in mid 2015.
