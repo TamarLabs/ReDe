@@ -4,37 +4,13 @@ import time
 import random
 import sys
 
-def helloworld(redis_service):
-    # push some data into the dehydrator
-    redis_service.execute_command("dehydrator.push", "x", "world", 1)
-    redis_service.execute_command("dehydrator.push", "y", "goodbye",2)
-    redis_service.execute_command("dehydrator.push", "z", "hello", 3)
-
-    # pull unneeded data before it expires
-    redis_service.execute_command("dehydrator.pull", "y")
-
-    # and make sure that it's gone
-    assert(redis_service.execute_command("dehydrator.isDehydrating", "y") == False)
-    #or not
-    assert(redis_service.execute_command("dehydrator.isDehydrating", "x") == True)
-
-    # poll at different times to get only the data that is done dehydrating
-    time.sleep(1)
-    t1_poll_result = redis_service.execute_command("dehydrator.poll")
-
-    time.sleep(2)
-    t3_poll_result = redis_service.execute_command("dehydrator.poll")
-
-    print t3_poll_result[0], t1_poll_result[0]
-
-
 def run_internal_test(redis_service):
     sys.stdout.write("module functional test (internal) - ")
     sys.stdout.flush()
     print(redis_service.execute_command("dehydrator.test"))
 
 def function_test_dehydrator(redis_service):
-    redis_service.flushall()
+    redis_service.execute_command("dehydrator.clear")
     sys.stdout.write("module functional test (external) - ")
     sys.stdout.flush()
     #  "push elements a,b & c (for 1,3 & 7 seconds)"
@@ -62,10 +38,10 @@ def function_test_dehydrator(redis_service):
     # (t1_poll_result)
     assert(len(t1_poll_result) == 1 and t1_poll_result[0] == "test_element c")
     print("PASS")
-    redis_service.flushall()
+    redis_service.execute_command("dehydrator.clear")
 
 def load_test_dehydrator(redis_service, cycles=100000, timeouts=[1,2,4,16,32,100,200,1000]):
-    redis_service.flushall()
+    redis_service.execute_command("dehydrator.clear")
     print "starting load tests"
 
     print "measuring PUSH"
@@ -106,8 +82,6 @@ def load_test_dehydrator(redis_service, cycles=100000, timeouts=[1,2,4,16,32,100
 
 if __name__ == "__main__":
     r = redis.StrictRedis(host='localhost', port=6379, db=0)
-    helloworld(r)
-
     run_internal_test(r)
     function_test_dehydrator(r)
     load_test_dehydrator(r)
