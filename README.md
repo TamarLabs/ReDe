@@ -1,16 +1,23 @@
 # RedisModulesSDK
+An Simple Redis Module for data dehydration.
 
-This little repo is here to help you write Redis modules a bit more easily.
+stub; what does this mean??
 
 ## What it includes:
 
-### 1. redismodule.h
+### 1. Dehydration module source code
 
-The only file you really need to start writing Redis modules. Either put this path into your module's include path, or copy it. 
+Build it, read it, love it, extend it. PRs are welcome!
 
-Notice: This is an up-to-date copy of it from the Redis repo.
+### 2. usage example files and load tests
 
-### 2. LibRMUtil 
+In this repository there are two python files that exemplify the usage of the module:
+* helloworld.py - very simple usage example of all the functions exposed by the module
+* test.py - run internal as well as external functional tests, load test and print it all to stdout.
+
+### 3. LibRMUtil
+
+From https://github.com/RedisLabs/RedisModulesSDK:
 
 A small library of utility functions and macros for module developers, including:
 
@@ -24,52 +31,75 @@ A small library of utility functions and macros for module developers, including
 
 It can be found under the `rmutil` folder, and compiles into a static library you link your module against.    
 
-### 3. An example Module
+## usage
 
-A minimal module implementing a few commands and demonstarting both the Redis Module API, and use of rmutils.
+The dehydrator is an effective 'snooze button' for events, you push an event into it along with an id (for future referance) and in how many seconds you want it back, and poll whenever you want the elements back. only expired elements would pop out.
 
-You can treat it as a template for your module, and extned its code and makefile.
+**It includes 2 main commands:**
 
-**It includes 3 commands:**
+* `DEHYDRATOR.PUSH` - push an element, it will need an id, the element itself and dehydration time in seconds.
+* `DEHYDRATOR.PULL` - pull the element with the appropriate id before it expires.
+* `DEHYDRATOR.POLL` - efficiently return all the expired elements.
+* `DEHYDRATOR.LOOK` - search the dehydrator for an element with the given id.
 
-* `EXAMPLE.PARSE` - demonstrating rmutil's argument helpers.
-* `EXAMPLE.HGETSET` - an atomic HGET/HSET command, demonstrating the higher level Redis module API.
-* `EXAMPLE.TEST` - a unit test of the above commands, demonstrating use of the testing utilities of rmutils.  
-  
-### 4. Documentation Files:
+**The module also includes 2 assistive commands:**
+* `DEHYDRATOR.CLEAR` - remove all the elements from the dehydrator.
+* `DEHYDRATOR.TEST`  - a unit test of the above commands.
 
-1. [API.md](API.md) - The official manual for writing Redis modules, copied from the Redis repo. 
-Read this before starting, as it's more than an API reference.
+### time complexity
 
-2. [FUNCTIONS.md](FUNCTIONS.md) - Generated API reference documentation for both the Redis module API, and LibRMUtil.
+* `DEHYDRATOR.PUSH`  - O(1)
+* `DEHYDRATOR.PULL`  - O(1)
+* `DEHYDRATOR.POLL`  - O(N) where N is the number of expired elements.
+* `DEHYDRATOR.LOOK`  - O(1)
+* `DEHYDRATOR.CLEAR` - O(N) where N is the number of dehydrated elements.
+* `DEHYDRATOR.TEST`  - Fixed time (~11 seconds) - this function uses `sleep` (dios mio, No! &#x271e;&#x271e;&#x271e;).
 
-3. [TYPES.md](TYPES.md) - Describes the API for creating new data structures inside Redis modules, 
-copied from the Redis repo.
-
-
-# Quick Start Guide
+## Quick Start Guide
 
 Here's what you need to do to build your first module:
 
 0. Build Redis in a build supporting modules.
-1. Build librmutil: `cd rmutil && make`
-2. Build the example module: `cd example && make`
-3. Run redis loading the module: `/path/to/redis-server --loadmodule ./example/module.so`
+1. Build the module: `make`
+3. Run Redis loading the module: `/path/to/redis-server --loadmodule ./example/module.so`
 
 Now run `redis-cli` and try the commands:
 
 ```
-127.0.0.1:9979> EXAMPLE.HGETSET foo bar baz
-(nil)
-127.0.0.1:9979> EXAMPLE.HGETSET foo bar vaz
-"baz"
-127.0.0.1:9979> EXAMPLE.PARSE SUM 5 2
-(integer) 7
-127.0.0.1:9979> EXAMPLE.PARSE PROD 5 2
-(integer) 10
-127.0.0.1:9979> EXAMPLE.TEST
+127.0.0.1:9979> dehydrator.clear
+OK
+127.0.0.1:9979> dehydrator.push id1 world 15
+OK
+127.0.0.1:9979> dehydrator.push id2 hello 1
+OK
+127.0.0.1:9979> dehydrator.push id3 goodbye 2
+OK
+127.0.0.1:9979> dehydrator.pull id3
+"goodbye"
+127.0.0.1:9979> dehydrator.poll
+1) "hello"
+127.0.0.1:9979> dehydrator.poll
+(empty list or set)
+127.0.0.1:6379> DEHYDRATOR.LOOK id1
+(integer) 1
+127.0.0.1:6379> DEHYDRATOR.LOOK id2
+(integer) 0
+```
+
+This `(empty list or set)` means that the there are no more items to pull right now, so we'll have to wait until enough time passes for our next element to be ready. After that we can run:
+
+```
+127.0.0.1:9979> dehydrator.poll
+1) "world"
+127.0.0.1:9979> dehydrator.test
 PASS
 ```
 
 Enjoy!
-    
+
+
+## About This Module
+
+This module is based off a python version of the same concepts developed in Tamar Labs by Adam Lev-Libfeld and Alexander Margolin in mid 2015.
+
+The Redis module was created by Adam Lev-Libfeld during the RedisModulesHackathon in late 2016, and is maintained by him solely.
