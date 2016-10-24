@@ -31,3 +31,8 @@
 # Debug files
 *.dSYM/
 *.su
+
+# Other
+*.db
+.vscode
+rmutil/test_vector
