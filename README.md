@@ -7,13 +7,13 @@ stub; what does this mean??
 
 ### 1. Dehydration module source code
 
-Build it, read it, love it, extend it. PRs are welcome!
+[module.c](module.c) - Build it, read it, love it, extend it (PRs are welcome)!
 
 ### 2. usage example files and load tests
 
 In this repository there are two python files that exemplify the usage of the module:
-* helloworld.py - very simple usage example of all the functions exposed by the module
-* test.py - run internal as well as external functional tests, load test and print it all to stdout.
+* [helloworld.py](helloworld.py) - very simple usage example of all the functions exposed by the module
+* [test.py](test.py) - run internal as well as external functional tests, load test and print it all to stdout.
 
 ### 3. LibRMUtil
 
@@ -31,7 +31,7 @@ A small library of utility functions and macros for module developers, including
 
 It can be found under the `rmutil` folder, and compiles into a static library you link your module against.    
 
-## usage
+## Usage
 
 The dehydrator is an effective 'snooze button' for events, you push an event into it along with an id (for future referance) and in how many seconds you want it back, and poll whenever you want the elements back. only expired elements would pop out.
 
@@ -55,7 +55,7 @@ The dehydrator is an effective 'snooze button' for events, you push an event int
 * `DEHYDRATOR.CLEAR` - O(N) where N is the number of dehydrated elements.
 * `DEHYDRATOR.TEST`  - Fixed time (~11 seconds) - this function uses `sleep` (dios mio, No! &#x271e;&#x271e;&#x271e;).
 
-## Quick Start Guide
+### Quick Start Guide
 
 Here's what you need to do to build your first module:
 
