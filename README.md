@@ -40,11 +40,11 @@ The dehydrator is an effective 'snooze button' for events, you push an event int
 * `DEHYDRATOR.PUSH` - push an element, it will need an id, the element itself and dehydration time in seconds.
 * `DEHYDRATOR.PULL` - pull the element with the appropriate id before it expires.
 * `DEHYDRATOR.POLL` - efficiently return all the expired elements.
-* `DEHYDRATOR.LOOK` - search the dehydrator for an element with the given id.
+* `DEHYDRATOR.LOOK` - search the dehydrator for an element with the given id and if found return it's payload (without pulling).
 
 **The module also includes 2 assistive commands:**
 * `DEHYDRATOR.CLEAR` - remove all the elements from the dehydrator.
-* `DEHYDRATOR.TEST`  - a unit test of the above commands.
+* `DEHYDRATOR.TEST`  - a set of unit tests of the above commands.
 
 ### time complexity
 
@@ -81,9 +81,9 @@ OK
 127.0.0.1:9979> dehydrator.poll
 (empty list or set)
 127.0.0.1:6379> DEHYDRATOR.LOOK id1
-(integer) 1
+"hello"
 127.0.0.1:6379> DEHYDRATOR.LOOK id2
-(integer) 0
+(nil)
 ```
 
 This `(empty list or set)` means that the there are no more items to pull right now, so we'll have to wait until enough time passes for our next element to be ready. After that we can run:
@@ -100,6 +100,7 @@ Enjoy!
 
 ## Future work
 
+* extend usage of Redis` low-level APIs
 * add pub/sub mechanism to POLL
 * add ability to have several different dehydrators (maybe as a new type)
 * a whole lot more
