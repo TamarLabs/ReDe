@@ -66,32 +66,34 @@ Here's what you need to do to build your first module:
 Now run `redis-cli` and try the commands:
 
 ```
-127.0.0.1:9979> dehydrator.clear
+127.0.0.1:9979> DEHYDRATOR.CLEAR
 OK
-127.0.0.1:9979> dehydrator.push id1 world 15
+127.0.0.1:9979> DEHYDRATOR.PUSH id1 world 15
 OK
-127.0.0.1:9979> dehydrator.push id2 hello 1
+127.0.0.1:9979> DEHYDRATOR.PUSH id2 hello 1
 OK
-127.0.0.1:9979> dehydrator.push id3 goodbye 2
+127.0.0.1:9979> DEHYDRATOR.PUSH id3 goodbye 2
 OK
-127.0.0.1:9979> dehydrator.pull id3
+127.0.0.1:9979> DEHYDRATOR.PULL id3
 "goodbye"
-127.0.0.1:9979> dehydrator.poll
+127.0.0.1:9979> DEHYDRATOR.POLL
 1) "hello"
-127.0.0.1:9979> dehydrator.poll
+127.0.0.1:9979> DEHYDRATOR.POLL
 (empty list or set)
 127.0.0.1:6379> DEHYDRATOR.LOOK id1
 "hello"
 127.0.0.1:6379> DEHYDRATOR.LOOK id2
 (nil)
+127.0.0.1:6379> DEHYDRATOR.PULL id2
+(nil)
 ```
 
-This `(empty list or set)` means that the there are no more items to pull right now, so we'll have to wait until enough time passes for our next element to be ready. After that we can run:
+This `(empty list or set)` reply from `DEHYDRATOR.POLL` means that the there are no more items to pull right now, so we'll have to wait until enough time passes for our next element to be ready (15 seconds in this case). Then we can run:
 
 ```
-127.0.0.1:9979> dehydrator.poll
+127.0.0.1:9979> DEHYDRATOR.POLL
 1) "world"
-127.0.0.1:9979> dehydrator.test
+127.0.0.1:9979> DEHYDRATOR.TEST
 PASS
 ```
 
@@ -103,6 +105,7 @@ Enjoy!
 * extend usage of Redis` low-level APIs
 * add pub/sub mechanism to POLL
 * add ability to have several different dehydrators (maybe as a new type)
+* "time to next element" command
 * a whole lot more
 
 ## About This Module
