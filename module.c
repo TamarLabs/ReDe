@@ -41,6 +41,7 @@ void printRedisStr(RedisModuleString *str, const char* name) {
     printf("%s = %s\n", name, c);
 }
 
+
 void* OpenKeyC(RedisModuleCtx *ctx, char* key_name, int mode)
 {
     RedisModuleString * key_name_str = RedisModule_CreateStringPrintf(ctx, key_name);
@@ -48,6 +49,8 @@ void* OpenKeyC(RedisModuleCtx *ctx, char* key_name, int mode)
     RedisModule_FreeString(ctx, key_name_str);
     return key;
 }
+
+
 RedisModuleString * _format_single_redis_module_string(RedisModuleCtx *ctx, const char* format, RedisModuleString *str)
 {
     const char *c;
