@@ -1,7 +1,14 @@
 # RedisModulesSDK
-An Simple Redis Module for data dehydration.
+An Simple Redis Module for data dehydration. This is a pretty straightforward implementation of the dehydration system depicted in the article "[Fast Data](https://goo.gl/DDFFPO)". The Goal of this module is to solve the *Contextual Completeness* and *Emergent Relevancy* problems by adding the ability to postpone incoming elements to a later time in which we will have a complete information for these elements. Effectively acting as a snooze button to any element.
 
-stub; what does this mean??
+From the article:
+> Dehydrators are simplistic time machines. They transport data elements that arrived prematurely in terms of their context right to the future where they might be needed, without loading the system while waiting. This concept is achieved by attaching a time-indexed data store to a clock, storing elements as they arrive to the dehydrator and re-introducing them as inputs to the system once a predetermined time period has passed.
+
+Using this system it is also possible to craft a self cleaning "claims check", to minimize load on transportation and manipulation nodes of a pipeline architecture.
+
+### Architecture
+
+TODO: stub;
 
 ## What it includes:
 
@@ -17,7 +24,7 @@ In this repository there are two python files that exemplify the usage of the mo
 
 ### 3. LibRMUtil
 
-From https://github.com/RedisLabs/RedisModulesSDK:
+From [Redis Modules SDK](https://github.com/RedisLabs/RedisModulesSDK) Readme:
 
 A small library of utility functions and macros for module developers, including:
 
