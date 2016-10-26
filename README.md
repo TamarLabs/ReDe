@@ -1,4 +1,4 @@
-# ReDehy - The Redis Dehydrator Module
+# ReDehy - The Redis Element Dehydration Module
 An Simple Redis Module for data dehydration. This is a pretty straightforward implementation of the dehydration system depicted in the article "[Fast Data](https://goo.gl/DDFFPO)". The Goal of this module is to solve the *Contextual Completeness* and *Emergent Relevancy* problems by adding the ability to postpone incoming elements to a later time in which we will have a complete information for these elements. Effectively acting as a snooze button to any element.
 
 From the article:
@@ -64,7 +64,7 @@ The dehydrator is an effective 'snooze button' for events, you push an event int
 
 ### Quick Start Guide
 
-Here's what you need to do to build your first module:
+Here's what you need to do to build this module:
 
 0. Build Redis in a build supporting modules.
 1. Build the module: `make`
