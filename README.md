@@ -6,9 +6,7 @@ From the article:
 
 Using this system it is also possible to craft a self cleaning "claims check", to minimize load on transportation and manipulation nodes of a pipeline architecture.
 
-### Architecture
-
-TODO: stub;
+You can read furthur on the algorithm behind this module [here](Algorithm.md).
 
 ## What it includes:
 
@@ -56,10 +54,10 @@ The dehydrator is an effective 'snooze button' for events, you push an event int
 ### time complexity
 
 * `DEHYDRATOR.PUSH`  - O(1)
-* `DEHYDRATOR.PULL`  - O(1)
-* `DEHYDRATOR.POLL`  - O(N) where N is the number of expired elements.
+* `DEHYDRATOR.PULL`  - O(N) where N is the number of dehydrating elements with the same TTL.
+* `DEHYDRATOR.POLL`  - O(N) where N is the number of expired elements, please notice we regard the number of different TTLs to be a constant and << # of dehydrated elements in the system.
 * `DEHYDRATOR.LOOK`  - O(1)
-* `DEHYDRATOR.CLEAR` - O(N) where N is the number of dehydrated elements.
+* `DEHYDRATOR.CLEAR` - O(N) where N is the total number of dehydrating elements.
 * `DEHYDRATOR.TEST`  - Fixed time (~11 seconds) - this function uses `sleep` (dios mio, No! &#x271e;&#x271e;&#x271e;).
 
 ### Quick Start Guide
