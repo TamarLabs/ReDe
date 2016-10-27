@@ -115,6 +115,6 @@ Enjoy!
 
 ## About This Module
 
-This module is based off a python version of the same concepts developed in Tamar Labs by Adam Lev-Libfeld and Alexander Margolin in mid 2015.
+This module is based off a python version of the same concepts developed in Tamar Labs by Adam Lev-Libfeld and Alexander Margolin and designed by Adam Lev-Libfeld in mid 2015.
 
 The Redis module was created by Adam Lev-Libfeld during the RedisModulesHackathon in late 2016, and is maintained by him solely.
