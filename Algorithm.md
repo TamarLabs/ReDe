@@ -25,6 +25,7 @@ An improvement can be done to this algorithm using a queue instead of a the list
 
 ## Queue-Map Algorithm
 
+**this is the algorithm that is used in this module**
 This Algorithm takes the best from both algorithms, and combines it in a new manner - the idea behind assumes you will have a set of different TTL which is significantly smaller (<<) in size then the amount of items that are stored. Using this assumption we could now store items in a queue based on their TTL. Each queue would be self-sorted by expiration due to the fact that each two consecutive events with the same TTL would have expiration times that correspond with the order in which they have arrived. Polling is done by iterating over the queues and from each queue pop all the elements which expired, once you see an element that has not expired yet, move to next queue.
 Using these rules, and by holding a map of sorted TTL queues we can now:
 

@@ -6,7 +6,7 @@ From the article:
 
 Using this system it is also possible to craft a self cleaning "claims check", to minimize load on transportation and manipulation nodes of a pipeline architecture.
 
-You can read furthur on the algorithm behind this module [here](Algorithm.md).
+You can read further on the algorithm behind this module [here](Algorithm.md).
 
 ## What it includes:
 
