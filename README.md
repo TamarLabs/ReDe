@@ -8,6 +8,8 @@ Using this system it is also possible to craft a self cleaning "claims check", t
 
 You can read further on the algorithm behind this module [here](Algorithm.md).
 
+![a gif that shows basic usage](redehy-basics.gif)
+
 ## What it includes:
 
 ### 1. Dehydration module source code
