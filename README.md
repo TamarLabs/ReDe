@@ -110,6 +110,7 @@ Enjoy!
 ## Future work
 
 * extend usage of Redis` low-level APIs
+* add UPDATE command
 * add pub/sub mechanism to POLL
 * add ability to have several different dehydrators (maybe as a new type)
 * "time to next element" command
