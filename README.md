@@ -8,6 +8,8 @@ Using this system it is also possible to craft a self cleaning "claims check", t
 
 You can read further on the algorithm behind this module [here](Algorithm.md).
 
+![a gif that shows basic usage](redehy-basics.gif)
+
 ## What it includes:
 
 ### 1. Dehydration module source code
@@ -108,6 +110,7 @@ Enjoy!
 ## Future work
 
 * extend usage of Redis` low-level APIs
+* add UPDATE command
 * add pub/sub mechanism to POLL
 * add ability to have several different dehydrators (maybe as a new type)
 * "time to next element" command
