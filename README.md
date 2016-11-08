@@ -42,7 +42,7 @@ It can be found under the `rmutil` folder, and compiles into a static library yo
 
 The dehydrator is an effective 'snooze button' for events, you push an event into it along with an id (for future referance) and in how many seconds you want it back, and poll whenever you want the elements back. only expired elements would pop out.
 
-**It includes 2 main commands:**
+**It includes 4 main commands:**
 
 * `DEHYDRATOR.PUSH` - push an element, it will need an id, the element itself and dehydration time in seconds.
 * `DEHYDRATOR.PULL` - pull the element with the appropriate id before it expires.
@@ -57,7 +57,7 @@ The dehydrator is an effective 'snooze button' for events, you push an event int
 
 * `DEHYDRATOR.PUSH`  - O(1)
 * `DEHYDRATOR.PULL`  - O(N) where N is the number of dehydrating elements with the same TTL.
-* `DEHYDRATOR.POLL`  - O(N) where N is the number of expired elements, please notice we regard the number of different TTLs to be a constant and << # of dehydrated elements in the system.
+* `DEHYDRATOR.POLL`  - O(N) where N is the number of expired elements, please notice we regard # of different TTLs << # of dehydrated elements in the system.
 * `DEHYDRATOR.LOOK`  - O(1)
 * `DEHYDRATOR.CLEAR` - O(N) where N is the total number of dehydrating elements.
 * `DEHYDRATOR.TEST`  - Fixed time (~11 seconds) - this function uses `sleep` (dios mio, No! &#x271e;&#x271e;&#x271e;).
