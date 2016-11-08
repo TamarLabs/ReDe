@@ -77,22 +77,13 @@ void _listPush(element_list* list, element_list_node* node)
 
 // pull and return the element at the first location
 element_list_node* _listPop(element_list* list) {
-   //save reference to first link
    element_list_node* head = list->head;
-   if (head == NULL)
-   {
-       return NULL;
-   }
 
-
-   //if only one link
-   if (head->next == NULL)
-   {
-       list->tail = NULL;
-   }
+   if (head == NULL) { return NULL; } // if list empty
+   if (head->next == NULL) { list->tail = NULL; } // if only one link
 
    // swap to new head
-   list->head = list->head->next;
+   list->head = head->next;
    list->len = list->len - 1;
    list->head->prev = NULL;
 
@@ -277,15 +268,10 @@ void deleteDehydrator(Dehydrator* dehydrator)
 
 void* pull(Dehydrator* dehydrator, char* element_id, element_list timeout_queue)
 {
-
     element_list_node* node = dictFetchValue(dehydrator->element_nodes, element_id);
-    if (node == NULL) // somthing is already there
-    {
-        return NULL;
-    }
+    if (node == NULL) { return NULL; } // no such element in the system
 
-    // extract element
-    void* element = node->element;
+    void* element = node->element; // extract element
 
     // delete element_nodes[element_id] to NULL
     dictDelete(dehydrator->element_nodes, element_id)
@@ -297,6 +283,19 @@ void* pull(Dehydrator* dehydrator, char* element_id, element_list timeout_queue)
     return element;
 }
 
+element_list_node* _getNodeForID(char* dehydrator_name, char* element_id)
+{
+        // get key dehydrator_name
+        Dehydrator* dehydrator = getDehydrator(dehydrator_name);
+        if (dehydrator == NULL)
+        {
+            //TODO: set error to be no such dehydrator
+            return NULL;
+        }
+
+        // now we know we have a dehydrator get element ttl from element_nodes
+        return dictFetchValue(dehydrator->element_nodes, element_id);
+}
 
 
 //##########################################################
@@ -305,14 +304,11 @@ void* pull(Dehydrator* dehydrator, char* element_id, element_list timeout_queue)
 //#
 //#########################################################
 
-int PushCommand(char* dehydrator_name, const char* element_id, void* element, long long ttl)
+int PushCommand_impl(char* dehydrator_name, const char* element_id, void* element, long long ttl)
 {
     // get key dehydrator_name
     Dehydrator* dehydrator = getDehydrator(dehydrator_name);
-    if (dehydrator == NULL)
-    {
-        return REDIS_ERR;
-    }
+    if (dehydrator == NULL) { return REDIS_ERR; } // no such dehydrator
 
     // now we know we have a dehydrator check if there is anything in id = element_id
     element_list_node* node = dictFetchValue(dehydrator->element_nodes, element_id);
@@ -325,7 +321,7 @@ int PushCommand(char* dehydrator_name, const char* element_id, void* element, lo
     element_list* timeout_queue = dictFetchValue(dehydrator->timeout_queues, ttl);
     if (timeout_queue == NULL) //does not exist
     {
-        //    create an empty element_list and add it to timeout_queues
+        // create an empty element_list and add it to timeout_queues
         timeout_queue = _createNewList();
         dictAdd(dehydrator->timeout_queues, ttl, timeout_queue);
     }
@@ -342,39 +338,24 @@ int PushCommand(char* dehydrator_name, const char* element_id, void* element, lo
 }
 
 
-int PullCommand(char* dehydrator_name, char* element_id)
+void* PullCommand_impl(char* dehydrator_name, char* element_id)
 {
-
-    // get key dehydrator_name
-    Dehydrator* dehydrator = getDehydrator(dehydrator_name);
-    if (dehydrator == NULL)
-    {
-        return REDIS_ERR;
-    }
-
-    // now we know we have a dehydrator get element ttl from element_nodes
-    element_list_node* node = dictFetchValue(dehydrator->element_nodes, element_id);
-    if (node == NULL) // does not contains an element with id = element_id
-    {
-        return REDIS_ERR;
-    }
+    element_list_node* node = _getNodeForID(char* dehydrator_name, char* element_id)
+    if (node == NULL) { return REDIS_ERR; } // no element with such element_id
 
     _listPull(node);
-    //TODO: output element
 
-    return REDIS_OK;
+    return node->element;
 }
 
 
-int PollCommand(char* dehydrator_name)
+element_list* PollCommand_impl(char* dehydrator_name)
 {
     // get key dehydrator_name
     Dehydrator* dehydrator = getDehydrator(dehydrator_name);
-    if (dehydrator == NULL)
-    {
-        return REDIS_ERR;
-    }
+    if (dehydrator == NULL) { return REDIS_ERR; } // no such dehydrator
 
+    element_list* pulled_elements = _createNewList();
 
     // for each timeout_queue in timeout_queues
     dictIterator *di = dictGetSafeIterator(dehydrator->timeout_queues);
@@ -386,10 +367,16 @@ int PollCommand(char* dehydrator_name)
         {
             element_list_node* head = timeout_queue->head
             if ((head != NULL) && (head->expiration < now()))
-                //TODO: append head->element to output
-                _listPop(list);
+            {
+                _listPush(pulled_elements ,_listPop(list)); // append head->element to output
+            }
             else
             {
+                if (timeout_queue->len == 0)
+                {
+                    deleteList(timeout_queues);
+                    dictDelete(dehydrator->timeout_queues, dictGetKey(de))
+                }
                 done_with_queue = true;
             }
         }
@@ -400,30 +387,67 @@ int PollCommand(char* dehydrator_name)
 }
 
 
-int UpdateCommand(char* dehydrator_name, char* element_id,  void* updated_element)
+void* LookCommand_impl(char* dehydrator_name, char* element_id)
 {
-    // get key dehydrator_name
-    Dehydrator* dehydrator = getDehydrator(dehydrator_name);
-    if (dehydrator == NULL)
-    {
-        return REDIS_ERR;
-    }
+    element_list_node* node = _getNodeForID(char* dehydrator_name, char* element_id)
+    if (node == NULL) { return REDIS_ERR; } // no element with such element_id
 
-    //TODO:
-
-    return REDIS_OK
+    return node->element;
 }
 
-int TimeToNextCommand(char* dehydrator_name)
+
+int DeleteCommand_impl(char* dehydrator_name)
+{
+    Dehydrator* dehydrator = getDehydrator(dehydrator_name);
+    if (dehydrator == NULL) { return REDIS_ERR; } // no such dehydrator
+
+    deleteDehydrator(dehydrator);
+
+    return REDIS_OK;
+}
+
+
+int UpdateCommand_impl(char* dehydrator_name, char* element_id,  void* updated_element)
+{
+    element_list_node* node = _getNodeForID(char* dehydrator_name, char* element_id)
+    if (node == NULL) { return REDIS_ERR; } // no element with such element_id
+
+    node->element = updated_element;
+
+    return REDIS_OK;
+}
+
+
+int TimeToNextCommand_impl(char* dehydrator_name)
 {
     // get key dehydrator_name
     Dehydrator* dehydrator = getDehydrator(dehydrator_name);
-    if (dehydrator == NULL)
+    if (dehydrator == NULL) { return REDIS_ERR; } // no such dehydrator
+
+    int time_to_next = -1;
+
+    dictIterator *di = dictGetSafeIterator(dehydrator->timeout_queues);
+    while ((de = dictNext(di)) != NULL)
     {
-        return REDIS_ERR;
+        element_list* list = dictGetVal(de);
+        while (!done_with_queue)
+        {
+            element_list_node* head = timeout_queue->head
+            if (head != NULL)
+            {
+                int tmp = head->expiration - now();
+                if (tmp) < 0)
+                {
+                    return 0;
+                }
+                else if ((tmp < time_to_next) || (time_to_next < 0))
+                {
+                    time_to_next = tmp;
+                }
+            }
+        }
     }
+    dictReleaseIterator(di);
 
-    //TODO:
-
-    return REDIS_OK
+    return time_to_next;
 }
