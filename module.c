@@ -590,6 +590,15 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx)
         return REDISMODULE_ERR;
     }
 
+    DehydratorType = RedisModule_CreateDataType(ctx, "dehy-type", 0,
+        HelloTypeRdbLoad,
+        HelloTypeRdbSave,
+        HelloTypeAofRewrite,
+        HelloTypeDigest,
+        HelloTypeFree
+    );
+    if (DehydratorType == NULL) return REDISMODULE_ERR;
+
     // register dehydrator.clear - using the shortened utility registration macro
     RMUtil_RegisterWriteCmd(ctx, "dehydrator.clear", ClearDehydratorCommand);
 

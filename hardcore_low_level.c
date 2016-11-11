@@ -34,7 +34,7 @@ ElementListNode* _createNewNode(void* element, const char* element_id, long long
 }
 
 //Creates a new Node and returns pointer to it.
-ElementList* _createNewList(void)
+ElementList* _createNewList()
 {
 	ElementList* list
 		= (ElementList*)RedisModule_Alloc(sizeof(ElementList));
@@ -161,17 +161,6 @@ void deleteList(ElementList* list)
 //#
 //#########################################################
 
-
-
-
-// khiter_t ForwardIndex_Iterate(ElementList *e) {
-//     ElementListIterator iter;
-//     iter.idx = e;
-//     iter.k = kh_begin(e);
-//
-//     return iter;
-// }
-
 ForwardIndexEntry *ForwardIndexIterator_Next(ForwardIndexIterator *iter) {
     // advance the iterator while it's empty
     while (iter->k != kh_end(iter->idx->hits) && !kh_exist(iter->idx->hits, iter->k)) {
@@ -202,6 +191,7 @@ Dehydrator* _createDehydrator(char* dehydrator_name)
 
     dehy->timeout_queues = kh_init(16);
     dehy->element_nodes = kh_init(32);
+	dehy->name = dehydrator_name;
 
     return dehy;
 }
@@ -226,28 +216,6 @@ Dehydrator* getDehydrator(char* dehydrator_name)
 }
 
 
-void ForwardIndexFree(ForwardIndex *idx) {
-    khiter_t k;
-    for (k = kh_begin(idx->hits); k != kh_end(idx->hits); ++k) {
-        if (kh_exist(idx->hits, k)) {
-            ForwardIndexEntry *ent = kh_value(idx->hits, k);
-            // free((void *)ent->term);
-
-            kh_del(32, idx->hits, k);
-            VVW_Free(ent->vw);
-
-            if (ent->stringFreeable) {
-                free((char *)ent->term);
-            }
-            free(ent);
-        }
-    }
-    kh_destroy(32, idx->hits);
-    free(idx);
-    // TODO: check if we need to free each entry separately
-}
-
-
 void deleteDehydrator(Dehydrator* dehydrator)
 {
     khiter_t k;
@@ -265,7 +233,6 @@ void deleteDehydrator(Dehydrator* dehydrator)
     kh_destroy(16, dehydrator->timeout_queues);
 
     // clear and delete the element_nodes dictionary
-    di = dictGetSafeIterator(dehydrator->);
 	for (k = kh_begin(dehydrator->element_nodes); k != kh_end(dehydrator->element_nodes); ++k)
 	{
 		if (kh_exist(dehydrator->element_nodes, k))
@@ -331,9 +298,71 @@ char* _toQueueName(int ttl)
     return queue_name;
 }
 
+
 //##########################################################
 //#
-//#                     REDIS COMMANDS
+//#                     REDIS Type
+//#
+//#########################################################
+//
+// void DehydratorTypeRdbSave(RedisModuleIO *rdb, void *value)
+// {
+//     Dehydrator *dehy = value;
+// 	RedisModule_SaveStringBuffer(rdb, dehy->name);
+// 	int queue_num = kh_size(dehy->timeout_queues);
+//     RedisModule_SaveUnsigned(rdb, queue_num);
+// 	while(queue_num--)
+// 	{
+// 		_listPop
+// 	}
+//
+//     while(node) { // TODO: all of this should be replaced
+//         RedisModule_SaveSigned(rdb,node->value);
+//         node = node->next;
+//     }
+// }
+//
+//
+// void *DehydratorTypeRdbLoad(RedisModuleIO *rdb, int encver) {
+//     if (encver != 0) {
+//         /* RedisModule_Log("warning","Can't load data with version %d", encver);*/
+//         return NULL;
+//     }
+// 	int lenptr;
+// 	char* name = RedisModule_LoadStringBuffer(rdb, &lenptr);
+//     Dehydrator *dehy = _createDehydrator(name);
+//     while(elements--) {
+//         int64_t ele = RedisModule_LoadSigned(rdb);
+//         DehydratorTypeInsert(dehy,ele);
+//     }
+//     return dehy;
+// }
+
+//
+// void DehydratorTypeAofRewrite(RedisModuleIO *aof, RedisModuleString *key, void *value) {
+//     struct DehydratorTypeObject *hto = value;
+//     struct DehydratorTypeNode *node = hto->head;
+//     while(node) {
+//         RedisModule_EmitAOF(aof,"HELLOTYPE.INSERT","sl",key,node->value);
+//         node = node->next;
+//     }
+// }
+//
+// void DehydratorTypeDigest(RedisModuleDigest *digest, void *value) {
+//     REDISMODULE_NOT_USED(digest);
+//     REDISMODULE_NOT_USED(value);
+//     /* TODO: The DIGEST module interface is yet not implemented. */
+// }
+
+void DehydratorTypeFree(void *value)
+{
+    deleteDehydrator(value);
+}
+
+
+//##########################################################
+//#
+//#                     REDIS Commands
 //#
 //#########################################################
 
@@ -398,17 +427,18 @@ ElementList* PollCommand_impl(char* dehydrator_name)
     Dehydrator* dehydrator = getDehydrator(dehydrator_name);
     if (dehydrator == NULL) { return REDIS_ERR; } // no such dehydrator
 
-    ElementList* pulled_elements = _createNewList();
+    ElementList* pulled_elements = _createNewList(); // TODO: use vector
 
     // for each timeout_queue in timeout_queues
-    dictIterator *di = dictGetSafeIterator(dehydrator->timeout_queues);
-    while ((de = dictNext(di)) != NULL)
-    {
+	khiter_t k;
+	for (k = kh_begin(dehydrator->timeout_queues); k != kh_end(dehydrator->timeout_queues); ++k)
+	{
+        if (!kh_exist(dehydrator->timeout_queues, k)) continue;
+        ElementList* list = kh_value(dehydrator->timeout_queues, k);
         boolean done_with_queue = false;
-        ElementList* list = dictGetVal(de);
         while (!done_with_queue)
         {
-            ElementListNode* head = timeout_queue->head
+            ElementListNode* head = list->head;
             if ((head != NULL) && (head->expiration < now()))
             {
                 _listPush(pulled_elements ,_listPop(list)); // append head->element to output
@@ -417,14 +447,13 @@ ElementList* PollCommand_impl(char* dehydrator_name)
             {
                 if (timeout_queue->len == 0)
                 {
-                    deleteList(timeout_queues);
-                    dictDelete(dehydrator->timeout_queues, dictGetKey(de))
+                    deleteList(list);
+					kh_del(16, dehydrator->timeout_queues, k);
                 }
                 done_with_queue = true;
             }
         }
     }
-    dictReleaseIterator(di);
 
     return pulled_elements;
 }
@@ -469,13 +498,14 @@ int TimeToNextCommand_impl(char* dehydrator_name)
 
     int time_to_next = -1;
 
-    dictIterator *di = dictGetSafeIterator(dehydrator->timeout_queues);
-    while ((de = dictNext(di)) != NULL)
-    {
-        ElementList* list = dictGetVal(de);
+	khiter_t k;
+	for (k = kh_begin(dehydrator->timeout_queues); k != kh_end(dehydrator->timeout_queues); ++k)
+	{
+		if (!kh_exist(dehydrator->timeout_queues, k)) continue;
+        ElementList* list = kh_value(dehydrator->timeout_queues, k);
         while (!done_with_queue)
         {
-            ElementListNode* head = timeout_queue->head
+            ElementListNode* head = list->head
             if (head != NULL)
             {
                 int tmp = head->expiration - now();
@@ -490,7 +520,6 @@ int TimeToNextCommand_impl(char* dehydrator_name)
             }
         }
     }
-    dictReleaseIterator(di);
 
     return time_to_next;
 }

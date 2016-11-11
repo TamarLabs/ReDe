@@ -54,12 +54,32 @@ KHASH_MAP_INIT_STR(32, ElementListNode*);
 typedef struct dehydrator{
     khash_t(16) *timeout_queues; //<ttl,ElementList>
     khash_t(32) * element_nodes; //<element_id,node*>
+    char* name;
 } Dehydrator;
 
 
 //##########################################################
 //#
-//#                     REDIS COMMANDS
+//#                     REDIS Type
+//#
+//#########################################################
+
+static RedisModuleType *DehydratorType;
+
+void *DehydratorTypeRdbLoad(RedisModuleIO *rdb, int encver);
+
+void DehydratorTypeRdbSave(RedisModuleIO *rdb, void *value);
+
+void DehydratorTypeAofRewrite(RedisModuleIO *aof, RedisModuleString *key, void *value);
+
+void DehydratorTypeDigest(RedisModuleDigest *digest, void *value);
+
+void DehydratorTypeFree(void *value);
+
+
+//##########################################################
+//#
+//#                     REDIS Commands
 //#
 //#########################################################
 
