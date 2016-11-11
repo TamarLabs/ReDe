@@ -1,3 +1,4 @@
+#include "hardcore_low_level.h"
 #include "redismodule.h"
 #include "rmutil/util.h"
 #include "rmutil/strings.h"
