@@ -6,6 +6,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 #include <string.h>
 #include "redismodule.h"
 #include "rmutil/util.h"
@@ -20,7 +21,7 @@
 //#########################################################
 
 //Creates a new Node and returns pointer to it.
-ElementListNode* _createNewNode(RedisModuleString* element, RedisModuleString* element_id, long long expiration)
+ElementListNode* _createNewNode(RedisModuleString* element, RedisModuleString* element_id, long long ttl, long long expiration)
 {
 	ElementListNode* newNode
 		= (ElementListNode*)RedisModule_Alloc(sizeof(ElementListNode));
@@ -28,6 +29,7 @@ ElementListNode* _createNewNode(RedisModuleString* element, RedisModuleString* e
     newNode->element_id = element_id;
     newNode->element = element;
 	newNode->expiration = expiration;
+	newNode->ttl = ttl;
 	newNode->next = NULL;
     newNode->prev = NULL;
 	return newNode;
@@ -78,8 +80,16 @@ ElementListNode* _listPop(ElementList* list) {
 }
 
 
-void _listPull(ElementListNode* node)
+void _listPull(Dehydrator* dehydrator, ElementListNode* node)
 {
+	ElementList* list = NULL;
+	khiter_t k = kh_get(16, dehydrator->timeout_queues, node->ttl);  // first have to get iterator
+	if (k != kh_end(dehydrator->timeout_queues)) // k will be equal to kh_end if key not present
+	{
+		list = kh_val(dehydrator->timeout_queues, k);
+	}
+	if (list == NULL) { return; }
+
     //hort circuit the node (carefull! pulling from tail or head)
     if (node == list->head)
     {
@@ -91,7 +101,7 @@ void _listPull(ElementListNode* node)
         node->prev->next = node->next;
     }
 
-    if (current == list->tail) {
+    if (node == list->tail) {
         list->tail = node->prev;
         list->tail->next = NULL;
     }
@@ -106,7 +116,6 @@ ElementListNode* _listFind(ElementList* list, RedisModuleString* element_id)
 {
     //start from head
     ElementListNode* current = list->head;
-    ElementListNode* previous = NULL;
 
     if (current == NULL) { return NULL; } //list is empty
 
@@ -114,11 +123,7 @@ ElementListNode* _listFind(ElementList* list, RedisModuleString* element_id)
     while (current->element_id != element_id)
     {
         if (current->next == NULL) { return NULL; } // got to tail
-        else
-        {
-            previous = current; //store reference to current node
-            current = current->next; //move to next node
-        }
+        current = current->next; //move to next node
     }
 
     while (current->element_id == element_id) // match found
@@ -133,8 +138,8 @@ ElementListNode* _listFind(ElementList* list, RedisModuleString* element_id)
 void deleteNode(ElementListNode* node)
 {
     // free everything else related to the node
-    RedisModule_FreeString(node->element_id); // TODO: in this needed
-    RedisModule_FreeString(node->element); // TODO: in this needed
+    // RedisModule_FreeString(node->element_id); // TODO: move out
+    // RedisModule_FreeString(node->element); // TODO: move out
     RedisModule_Free(node);
 }
 
@@ -157,28 +162,6 @@ void deleteList(ElementList* list)
 
 //##########################################################
 //#
-//#                    Dictionary
-//#
-//#########################################################
-
-ForwardIndexEntry *ForwardIndexIterator_Next(ForwardIndexIterator *iter) {
-    // advance the iterator while it's empty
-    while (iter->k != kh_end(iter->idx->hits) && !kh_exist(iter->idx->hits, iter->k)) {
-        ++iter->k;
-    }
-
-    // if we haven't reached the end, return the current iterator's entry
-    if (iter->k != kh_end(iter->idx->hits) && kh_exist(iter->idx->hits, iter->k)) {
-        ForwardIndexEntry *entry = kh_value(iter->idx->hits, iter->k);
-        ++iter->k;
-        return entry;
-    }
-
-    return NULL;
-}
-
-//##########################################################
-//#
 //#                     Utilities
 //#
 //#########################################################
@@ -187,7 +170,7 @@ Dehydrator* _createDehydrator(RedisModuleString* dehydrator_name)
 {
 
     Dehydrator* dehy
-		= (dehydrator*)RedisModule_Alloc(sizeof(dehydrator));
+		= (Dehydrator*)RedisModule_Alloc(sizeof(Dehydrator));
 
     dehy->timeout_queues = kh_init(16);
     dehy->element_nodes = kh_init(32);
@@ -197,17 +180,17 @@ Dehydrator* _createDehydrator(RedisModuleString* dehydrator_name)
 }
 
 
-Dehydrator* getDehydrator(RedisModuleString* dehydrator_name)
+Dehydrator* getDehydrator(RedisModuleCtx* ctx, RedisModuleString* dehydrator_name)
 {
     // get key dehydrator_name
-	RedisModuleKey *key = RedisModule_OpenKey(ctx,argv[1],
-	REDISMODULE_READ|REDISMODULE_WRITE);
+	RedisModuleKey *key = RedisModule_OpenKey(ctx, dehydrator_name,
+		REDISMODULE_READ|REDISMODULE_WRITE);
 	int type = RedisModule_KeyType(key);
 	if (type != REDISMODULE_KEYTYPE_EMPTY &&
 		RedisModule_ModuleTypeGetType(key) != DehydratorType)
 	{
 		// key contains somthing that is not a dehydrator
-		return NULL// TODO: RedisModule_ReplyWithError(ctx,REDISMODULE_ERRORMSG_WRONGTYPE);
+		return NULL;// TODO: RedisModule_ReplyWithError(ctx,REDISMODULE_ERRORMSG_WRONGTYPE);
 	}
 	if (type == REDISMODULE_KEYTYPE_EMPTY)
     {
@@ -248,7 +231,7 @@ void deleteDehydrator(Dehydrator* dehydrator)
 	}
     kh_destroy(32, dehydrator->element_nodes);
 
-	RedisModule_FreeString(dehydrator->name);
+	// RedisModule_FreeString(ctx, dehydrator->name);
 
     // delete the dehydrator
     RedisModule_Free(dehydrator);
@@ -258,7 +241,7 @@ void deleteDehydrator(Dehydrator* dehydrator)
 RedisModuleString* pull(Dehydrator* dehydrator, RedisModuleString* element_id, ElementList* timeout_queue)
 {
 	ElementListNode* node = NULL;
-	khiter_t k = kh_get(32, dehydrator->element_nodes, element_id);  // first have to get iterator
+	khiter_t k = kh_get(32, dehydrator->element_nodes, RedisModule_StringPtrLen(element_id, NULL));  // first have to get iterator
 	if (k != kh_end(dehydrator->element_nodes)) // k will be equal to kh_end if key not present
 	{
 		node = kh_val(dehydrator->element_nodes, k);
@@ -278,19 +261,11 @@ RedisModuleString* pull(Dehydrator* dehydrator, RedisModuleString* element_id, E
     return element;
 }
 
-ElementListNode* _getNodeForID(RedisModuleString* dehydrator_name, RedisModuleString* element_id)
+ElementListNode* _getNodeForID(Dehydrator* dehydrator, RedisModuleString* element_id)
 {
-        // get key dehydrator_name
-        Dehydrator* dehydrator = getDehydrator(dehydrator_name);
-        if (dehydrator == NULL)
-        {
-            //TODO: set error to be no such dehydrator
-            return NULL;
-        }
-
         // now we know we have a dehydrator get element node from element_nodes
 		ElementListNode* node = NULL;
-		khiter_t k = kh_get(32, dehydrator->element_nodes, element_id);  // first have to get iterator
+		khiter_t k = kh_get(32, dehydrator->element_nodes, RedisModule_StringPtrLen(element_id, NULL));  // first have to get iterator
 		if (k != kh_end(dehydrator->element_nodes)) // k will be equal to kh_end if key not present
 		{
 			node = kh_val(dehydrator->element_nodes, k);
@@ -298,13 +273,13 @@ ElementListNode* _getNodeForID(RedisModuleString* dehydrator_name, RedisModuleSt
         return node;
 }
 
-char* _toQueueName(int ttl)
-{
-	if (ttl > 315400000000) { ttl = 315400000000; } // you know, a decade has only 3.154e+11 milliseconds in it..
-	char* queue_name = (char*)RedisModule_Alloc(sizeof(char)*32); // 12 + 14 + some good measure
-	sprintf(queue_name, "timeout_queue#%s", ttl);
-    return queue_name;
-}
+// char* _toQueueName(int ttl)
+// {
+// 	if (ttl > 315400000000) { ttl = 315400000000; } // you know, a decade has only 3.154e+11 milliseconds in it..
+// 	char* queue_name = (char*)RedisModule_Alloc(sizeof(char)*32); // 12 + 14 + some good measure
+// 	sprintf(queue_name, "timeout_queue#%s", ttl);
+//     return queue_name;
+// }
 
 
 //##########################################################
@@ -317,29 +292,29 @@ void DehydratorTypeRdbSave(RedisModuleIO *rdb, void *value)
 {
     Dehydrator *dehy = value;
 	RedisModule_SaveString(rdb, dehy->name);
-	RedisModule_SaveUnsigned(rdb, kh_size(dehydrator->timeout_queues));
+	RedisModule_SaveUnsigned(rdb, kh_size(dehy->timeout_queues));
 	// for each timeout_queue in timeout_queues
 	khiter_t k;
-	for (k = kh_begin(dehydrator->timeout_queues); k != kh_end(dehydrator->timeout_queues); ++k)
+	for (k = kh_begin(dehy->timeout_queues); k != kh_end(dehy->timeout_queues); ++k)
 	{
-		if (!kh_exist(dehydrator->timeout_queues, k)) continue;
-		ElementList* list = kh_value(dehydrator->timeout_queues, k);
-		int ttl = kh_key(dehydrator->timeout_queues, k);
+		if (!kh_exist(dehy->timeout_queues, k)) continue;
+		ElementList* list = kh_value(dehy->timeout_queues, k);
+		int ttl = kh_key(dehy->timeout_queues, k);
 		RedisModule_SaveUnsigned(rdb, ttl);
 		RedisModule_SaveUnsigned(rdb, list->len);
 		ElementListNode* node = list->head;
-		boolean done_with_queue = false;
+		int done_with_queue = 0;
 		while (!done_with_queue)
 		{
 			if ((node != NULL))
 			{
-				RedisModule_SaveUnsigned(rdb, head->expiration);
-				RedisModule_SaveString(rdb, head->element_id);
-				RedisModule_SaveString(rdb, head->element);
+				RedisModule_SaveUnsigned(rdb, node->expiration);
+				RedisModule_SaveString(rdb, node->element_id);
+				RedisModule_SaveString(rdb, node->element);
 			}
 			else
 			{
-				done_with_queue = true;
+				done_with_queue = 1;
 			}
 			node = node->next;
 		}
@@ -356,7 +331,7 @@ void *DehydratorTypeRdbLoad(RedisModuleIO *rdb, int encver)
 	uint64_t queue_num = RedisModule_LoadUnsigned(rdb);
 	while(queue_num--)
 	{
-		ElementList* timeout_queue = _createNewList()
+		ElementList* timeout_queue = _createNewList();
 		uint64_t ttl = RedisModule_LoadUnsigned(rdb);
 
 		uint64_t node_num = RedisModule_LoadUnsigned(rdb);
@@ -366,28 +341,29 @@ void *DehydratorTypeRdbLoad(RedisModuleIO *rdb, int encver)
 			RedisModuleString* element_id = RedisModule_LoadString(rdb);
 			uint64_t expiration = RedisModule_LoadUnsigned(rdb);
 
-			ElementListNode* node  = _createNewNode(element, element_id, expiration);
+			ElementListNode* node  = _createNewNode(element, element_id, ttl, expiration);
 
 			_listPush(timeout_queue, node);
 
 			// mark element dehytion location in element_nodes
 			int retval;
-			k = kh_put(32, dehydrator->element_nodes, element_id, &retval);
-			kh_value(dehydrator->element_nodes, k) = node;
+			k = kh_put(32, dehy->element_nodes, RedisModule_StringPtrLen(element_id, NULL), &retval);
+			kh_value(dehy->element_nodes, k) = node;
 		}
 
 		int retval;
-        k = kh_put(16, dehydrator->timeout_queues, ttl, &retval);
-        kh_value(dehydrator->timeout_queues, k) = timeout_queue;
+        k = kh_put(16, dehy->timeout_queues, ttl, &retval);
+        kh_value(dehy->timeout_queues, k) = timeout_queue;
 	}
 
     return dehy;
 }
 
-void DehydratorTypeAofRewrite(RedisModuleIO *aof, RedisModuleString *key, void *value) {
-	REDISMODULE_NOT_USED(aof);
-	REDISMODULE_NOT_USED(key);
-	REDISMODULE_NOT_USED(value);
+void DehydratorTypeAofRewrite(RedisModuleIO *aof, RedisModuleString *key, void *value)
+{
+	// REDISMODULE_NOT_USED(aof);
+	// REDISMODULE_NOT_USED(key);
+	// REDISMODULE_NOT_USED(value);
 	// TODO: stub
 	// struct DehydratorTypeObject *hto = value;
     // struct DehydratorTypeNode *node = hto->head;
@@ -397,9 +373,10 @@ void DehydratorTypeAofRewrite(RedisModuleIO *aof, RedisModuleString *key, void *
     // }
 }
 
-void DehydratorTypeDigest(RedisModuleDigest *digest, void *value) {
-    REDISMODULE_NOT_USED(digest);
-    REDISMODULE_NOT_USED(value);
+void DehydratorTypeDigest(RedisModuleDigest *digest, void *value)
+{
+    // REDISMODULE_NOT_USED(digest);
+    // REDISMODULE_NOT_USED(value);
     /* TODO: The DIGEST module interface is yet not implemented. */
 }
 
@@ -415,17 +392,17 @@ void DehydratorTypeFree(void *value)
 //#
 //#########################################################
 
-int PushCommand_impl(RedisModuleString* dehydrator_name, RedisModuleString* element_id, RedisModuleString* element, int ttl)
+int PushCommand_impl(RedisModuleCtx* ctx, RedisModuleString* dehydrator_name, RedisModuleString* element_id, RedisModuleString* element, int ttl)
 {
     // get key dehydrator_name
-    Dehydrator* dehydrator = getDehydrator(dehydrator_name);
-    if (dehydrator == NULL) { return REDIS_ERR; } // no such dehydrator
+    Dehydrator* dehydrator = getDehydrator(ctx, dehydrator_name);
+    if (dehydrator == NULL) { return REDISMODULE_ERR; } // no such dehydrator
 
     // now we know we have a dehydrator check if there is anything in id = element_id
-    ElementListNode* node = _getNodeForID(dehydrator_name, element_id);
+    ElementListNode* node = _getNodeForID(dehydrator, element_id);
     if (node != NULL) // somthing is already there
     {
-        return REDIS_ERR;
+        return REDISMODULE_ERR;
     }
 
     // get timeout_queues[ttl]
@@ -445,36 +422,40 @@ int PushCommand_impl(RedisModuleString* dehydrator_name, RedisModuleString* elem
     }
 
     //create an ElementListNode
-    node  = _createNewNode(element, element_id, now() + ttl);
+    node  = _createNewNode(element, element_id, ttl, time(0) + ttl);
 
     // push to tail of the list
     _listPush(timeout_queue, node);
 
     // mark element dehytion location in element_nodes
 	int retval;
-	k = kh_put(32, dehydrator->element_nodes, element_id, &retval);
+	k = kh_put(32, dehydrator->element_nodes, RedisModule_StringPtrLen(element_id, NULL), &retval);
 	kh_value(dehydrator->element_nodes, k) = node;
 
-    return REDIS_OK;
+    return REDISMODULE_OK;
 }
 
 
-RedisModuleString* PullCommand_impl(RedisModuleString* dehydrator_name, RedisModuleString* element_id)
+RedisModuleString* PullCommand_impl(RedisModuleCtx* ctx, RedisModuleString* dehydrator_name, RedisModuleString* element_id)
 {
-    ElementListNode* node = _getNodeForID(dehydrator_name, element_id)
-    if (node == NULL) { return REDIS_ERR; } // no element with such element_id
+	// get key dehydrator_name
+	Dehydrator * dehydrator = getDehydrator(ctx, dehydrator_name);
+	if (dehydrator == NULL) { return NULL; }
 
-    _listPull(node);
+    ElementListNode* node = _getNodeForID(dehydrator, element_id);
+    if (node == NULL) { return NULL; } // no element with such element_id
+
+    _listPull(dehydrator, node);
 
     return node->element;
 }
 
 
-ElementList* PollCommand_impl(RedisModuleString* dehydrator_name)
+ElementList* PollCommand_impl(RedisModuleCtx* ctx, RedisModuleString* dehydrator_name)
 {
     // get key dehydrator_name
-    Dehydrator* dehydrator = getDehydrator(dehydrator_name);
-    if (dehydrator == NULL) { return REDIS_ERR; } // no such dehydrator
+    Dehydrator* dehydrator = getDehydrator(ctx, dehydrator_name);
+    if (dehydrator == NULL) { return NULL; } // no such dehydrator
 
     ElementList* pulled_elements = _createNewList(); // TODO: use vector
 
@@ -484,22 +465,22 @@ ElementList* PollCommand_impl(RedisModuleString* dehydrator_name)
 	{
         if (!kh_exist(dehydrator->timeout_queues, k)) continue;
         ElementList* list = kh_value(dehydrator->timeout_queues, k);
-        boolean done_with_queue = false;
+        int done_with_queue = 0;
         while (!done_with_queue)
         {
             ElementListNode* head = list->head;
-            if ((head != NULL) && (head->expiration < now()))
+            if ((head != NULL) && (head->expiration < time(0)))
             {
                 _listPush(pulled_elements ,_listPop(list)); // append head->element to output
             }
             else
             {
-                if (timeout_queue->len == 0)
+                if (list->len == 0)
                 {
                     deleteList(list);
 					kh_del(16, dehydrator->timeout_queues, k);
                 }
-                done_with_queue = true;
+                done_with_queue = 1;
             }
         }
     }
@@ -508,42 +489,48 @@ ElementList* PollCommand_impl(RedisModuleString* dehydrator_name)
 }
 
 
-RedisModuleString* LookCommand_impl(RedisModuleString* dehydrator_name, RedisModuleString* element_id)
+RedisModuleString* LookCommand_impl(RedisModuleCtx* ctx, RedisModuleString* dehydrator_name, RedisModuleString* element_id)
 {
-    ElementListNode* node = _getNodeForID(dehydrator_name, element_id)
-    if (node == NULL) { return REDIS_ERR; } // no element with such element_id
+	Dehydrator * dehydrator = getDehydrator(ctx, dehydrator_name);
+	if (dehydrator == NULL) { return NULL; }
+
+    ElementListNode* node = _getNodeForID(dehydrator, element_id);
+    if (node == NULL) { return NULL; } // no element with such element_id
 
     return node->element;
 }
 
 
-int DeleteCommand_impl(RedisModuleString* dehydrator_name)
+int DeleteCommand_impl(RedisModuleCtx* ctx, RedisModuleString* dehydrator_name)
 {
-    Dehydrator* dehydrator = getDehydrator(dehydrator_name);
-    if (dehydrator == NULL) { return REDIS_ERR; } // no such dehydrator
+    Dehydrator* dehydrator = getDehydrator(ctx, dehydrator_name);
+    if (dehydrator == NULL) { return REDISMODULE_ERR; } // no such dehydrator
 
     deleteDehydrator(dehydrator);
 
-    return REDIS_OK;
+    return REDISMODULE_OK;
 }
 
 
-int UpdateCommand_impl(RedisModuleString* dehydrator_name, RedisModuleString* element_id,  RedisModuleString* updated_element)
+int UpdateCommand_impl(RedisModuleCtx* ctx, RedisModuleString* dehydrator_name, RedisModuleString* element_id,  RedisModuleString* updated_element)
 {
-    ElementListNode* node = _getNodeForID(dehydrator_name, element_id)
-    if (node == NULL) { return REDIS_ERR; } // no element with such element_id
+	Dehydrator * dehydrator = getDehydrator(ctx, dehydrator_name);
+	if (dehydrator == NULL) { return REDISMODULE_ERR; }
+
+    ElementListNode* node = _getNodeForID(dehydrator, element_id);
+    if (node == NULL) { return REDISMODULE_ERR; } // no element with such element_id
 
     node->element = updated_element;
 
-    return REDIS_OK;
+    return REDISMODULE_OK;
 }
 
 
-int TimeToNextCommand_impl(RedisModuleString* dehydrator_name)
+int TimeToNextCommand_impl(RedisModuleCtx* ctx, RedisModuleString* dehydrator_name)
 {
     // get key dehydrator_name
-    Dehydrator* dehydrator = getDehydrator(dehydrator_name);
-    if (dehydrator == NULL) { return REDIS_ERR; } // no such dehydrator
+    Dehydrator* dehydrator = getDehydrator(ctx, dehydrator_name);
+    if (dehydrator == NULL) { return REDISMODULE_ERR; } // no such dehydrator
 
     int time_to_next = -1;
 
@@ -552,23 +539,19 @@ int TimeToNextCommand_impl(RedisModuleString* dehydrator_name)
 	{
 		if (!kh_exist(dehydrator->timeout_queues, k)) continue;
         ElementList* list = kh_value(dehydrator->timeout_queues, k);
-        while (!done_with_queue)
+        ElementListNode* head = list->head;
+        if (head != NULL)
         {
-            ElementListNode* head = list->head
-            if (head != NULL)
+            int tmp = head->expiration - time(0);
+            if (tmp < 0)
             {
-                int tmp = head->expiration - now();
-                if (tmp) < 0)
-                {
-                    return 0;
-                }
-                else if ((tmp < time_to_next) || (time_to_next < 0))
-                {
-                    time_to_next = tmp;
-                }
+                return 0;
+            }
+            else if ((tmp < time_to_next) || (time_to_next < 0))
+            {
+                time_to_next = tmp;
             }
         }
     }
-
     return time_to_next;
 }

@@ -23,6 +23,7 @@
 typedef struct element_list_node{
     RedisModuleString* element;
     RedisModuleString* element_id;
+    int ttl;
     long long expiration;
     struct element_list_node* next;
     struct element_list_node* prev;
@@ -83,18 +84,18 @@ void DehydratorTypeFree(void *value);
 //#
 //#########################################################
 
-int PushCommand_impl(RedisModuleString* dehydrator_name, RedisModuleString* element_id, RedisModuleString* element, long long ttl);
+int PushCommand_impl(RedisModuleCtx* ctx, RedisModuleString* dehydrator_name, RedisModuleString* element_id, RedisModuleString* element, int ttl);
 
-void* PullCommand_impl(RedisModuleString* dehydrator_name, RedisModuleString* element_id);
+RedisModuleString* PullCommand_impl(RedisModuleCtx* ctx, RedisModuleString* dehydrator_name, RedisModuleString* element_id);
 
-ElementList* PollCommand_impl(RedisModuleString* dehydrator_name);
+ElementList* PollCommand_impl(RedisModuleCtx* ctx, RedisModuleString* dehydrator_name);
 
-void* LookCommand_impl(RedisModuleString* dehydrator_name, RedisModuleString* element_id);
+RedisModuleString* LookCommand_impl(RedisModuleCtx* ctx, RedisModuleString* dehydrator_name, RedisModuleString* element_id);
 
-int DeleteCommand_impl(RedisModuleString* dehydrator_name);
+int DeleteCommand_impl(RedisModuleCtx* ctx, RedisModuleString* dehydrator_name);
 
-int UpdateCommand_impl(RedisModuleString* dehydrator_name, RedisModuleString* element_id,  RedisModuleString* updated_element);
+int UpdateCommand_impl(RedisModuleCtx* ctx, RedisModuleString* dehydrator_name, RedisModuleString* element_id,  RedisModuleString* updated_element);
 
-int TimeToNextCommand_impl(RedisModuleString* dehydrator_name);
+int TimeToNextCommand_impl(RedisModuleCtx* ctx, RedisModuleString* dehydrator_name);
 
 #endif  /* LOWLEVEL_DEHY_IMPL_H */
