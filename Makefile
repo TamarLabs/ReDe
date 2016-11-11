@@ -26,7 +26,7 @@ all: module.so rmutil
 rmutil:
 	$(MAKE) -C $(RMUTIL_LIBDIR)
 
-module.so: module.o hardcore_low_level.o
+module.so: module.o
 	$(LD) -o $@ module.o $(SHOBJ_LDFLAGS) $(LIBS) -L$(RMUTIL_LIBDIR) -lrmutil -lc
 
 clean:
