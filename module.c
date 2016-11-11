@@ -591,11 +591,11 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx)
     }
 
     DehydratorType = RedisModule_CreateDataType(ctx, "dehy-type", 0,
-        HelloTypeRdbLoad,
-        HelloTypeRdbSave,
-        HelloTypeAofRewrite,
-        HelloTypeDigest,
-        HelloTypeFree
+        DehydratorTypeRdbLoad,
+        DehydratorTypeRdbSave,
+        DehydratorTypeAofRewrite,
+        DehydratorTypeDigest,
+        DehydratorTypeFree
     );
     if (DehydratorType == NULL) return REDISMODULE_ERR;
 
