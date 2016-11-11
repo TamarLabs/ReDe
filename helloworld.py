@@ -13,9 +13,9 @@ def helloworld(redis_service):
     redis_service.execute_command("dehydrator.pull", "y")
 
     # and make sure that it's gone
-    assert(redis_service.execute_command("dehydrator.look", "y") == False)
+    assert(not redis_service.execute_command("dehydrator.look", "y"))
     #or not
-    assert(redis_service.execute_command("dehydrator.look", "x") == True)
+    assert(redis_service.execute_command("dehydrator.look", "x"))
 
     # poll at different times to get only the data that is done dehydrating
     time.sleep(1)
