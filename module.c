@@ -268,6 +268,7 @@ Dehydrator* getDehydrator(RedisModuleCtx* ctx, RedisModuleString* dehydrator_nam
 		RedisModule_ModuleTypeGetType(key) != DehydratorType)
 	{
         RedisModule_ReplyWithError(ctx,REDISMODULE_ERRORMSG_WRONGTYPE);
+        RedisModule_CloseKey(key);
 		return NULL;
 	}
 	if (type == REDISMODULE_KEYTYPE_EMPTY)
@@ -276,16 +277,19 @@ Dehydrator* getDehydrator(RedisModuleCtx* ctx, RedisModuleString* dehydrator_nam
         {
            Dehydrator* dehydrator = _createDehydrator(dehydrator_name);
            RedisModule_ModuleTypeSetValue(key, DehydratorType, dehydrator);
+           // TODO: RedisModule_CloseKey(key);
            return dehydrator;
         }
         else
         {
             RedisModule_ReplyWithError(ctx, "ERROR: No Such dehydrator.");
+            RedisModule_CloseKey(key);
             return NULL;
         }
     }
 	else
 	{
+        // TODO: RedisModule_CloseKey()
 		return RedisModule_ModuleTypeGetValue(key);
 	}
 }
@@ -295,7 +299,6 @@ void printDehydrator(Dehydrator* dehydrator)
     khiter_t k;
 
     printf("\n======== timeout_queues =========\n");
-    // clear and delete the timeout_queues dictionary
 	for (k = kh_begin(dehydrator->timeout_queues); k != kh_end(dehydrator->timeout_queues); ++k)
 	{
         if (kh_exist(dehydrator->timeout_queues, k))
@@ -307,7 +310,6 @@ void printDehydrator(Dehydrator* dehydrator)
     }
 
     printf("\n======== element_nodes =========\n");
-    // clear and delete the element_nodes dictionary
 	for (k = kh_begin(dehydrator->element_nodes); k != kh_end(dehydrator->element_nodes); ++k)
 	{
 		if (kh_exist(dehydrator->element_nodes, k))
@@ -350,6 +352,7 @@ void deleteDehydrator(Dehydrator* dehydrator)
 
     // delete the dehydrator
     RedisModule_Free(dehydrator);
+    //TODO: RedisModule_DeleteKey
 }
 
 
@@ -816,38 +819,6 @@ int PushCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 }
 
 
-RedisModuleString * _pull(RedisModuleCtx *ctx, RedisModuleString * element_id, RedisModuleString * timeout_queue_var)
-{
-
-    RedisModuleString *timeout_queue = timeout_queue_var;
-    RedisModuleKey* REDIS_QUEUE_MAP_key = OpenKeyC(ctx, REDIS_QUEUE_MAP, REDISMODULE_READ | REDISMODULE_WRITE);
-    if (timeout_queue == NULL)
-    {
-        // Retrieve element timeout
-        RedisModule_HashGet(REDIS_QUEUE_MAP_key, REDISMODULE_HASH_NONE, element_id, &timeout_queue, NULL);
-        if (timeout_queue == NULL)
-        {
-            return NULL;
-        }
-    }
-
-    RedisModuleString *element;
-    RedisModuleKey* REDIS_ELEMENT_MAP_key = OpenKeyC(ctx, REDIS_ELEMENT_MAP, REDISMODULE_READ | REDISMODULE_WRITE);
-    RedisModule_HashGet(REDIS_ELEMENT_MAP_key, REDISMODULE_HASH_NONE, element_id, &element, NULL);
-
-    // Remove the element from this queue
-    RedisModule_HashSet(REDIS_ELEMENT_MAP_key, REDISMODULE_HASH_NONE, element_id, REDISMODULE_HASH_DELETE, NULL);
-    RedisModule_HashSet(REDIS_QUEUE_MAP_key, REDISMODULE_HASH_NONE, element_id, REDISMODULE_HASH_DELETE, NULL);
-    RedisModule_Call(ctx, "HDEL", "cs", REDIS_EXPIRATION_MAP, element_id);
-    RedisModule_Call(ctx, "LREM", "sls", timeout_queue, 1, element_id);
-
-    _unset_element_dehydrating(ctx, element_id);
-    RedisModule_CloseKey(REDIS_QUEUE_MAP_key);
-    RedisModule_CloseKey(REDIS_ELEMENT_MAP_key);
-    return element;
-}
-
-
 /*
 * dehydrator.pull <element_id>
 * Pull an element off the bench by id.
@@ -882,25 +853,6 @@ int PullCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     RedisModule_ReplyWithString(ctx, node->element);
     return REDISMODULE_OK;
 }
-
-
-RedisModuleString * _inspect(RedisModuleCtx *ctx, RedisModuleString * element_id, RedisModuleString * timeout_queue)
-{
-    RedisModuleString * expiration_str;
-    RedisModuleKey* REDIS_EXPIRATION_MAP_key = OpenKeyC(ctx, REDIS_EXPIRATION_MAP, REDISMODULE_READ);
-    RedisModule_HashGet(REDIS_EXPIRATION_MAP_key, REDISMODULE_HASH_NONE, element_id, &expiration_str, NULL);
-    RedisModule_CloseKey(REDIS_EXPIRATION_MAP_key);
-    long long expiration;
-    RedisModule_StringToLongLong(expiration_str, &expiration);
-    time_t result = time(NULL);
-    uintmax_t now = (uintmax_t)result;
-    if (expiration > 0 && (expiration <= now))
-    {
-        return _pull(ctx, element_id, timeout_queue);
-    }
-    return NULL;
-}
-
 
 /*
 * dehydrator.poll
