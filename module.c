@@ -332,6 +332,14 @@ ElementListNode* _getNodeForID(Dehydrator* dehydrator, RedisModuleString* elemen
 		if (k != kh_end(dehydrator->element_nodes)) // k will be equal to kh_end if key not present
 		{
 			node = kh_val(dehydrator->element_nodes, k);
+            if (node == NULL)
+            {
+                printf("element is NULL\n");
+            }
+            else
+            {
+                printRedisStr(node->element, "element"); // TODO: remove
+            }
 		}
         return node;
 }
@@ -658,7 +666,12 @@ int LookCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 
     ElementListNode* node = _getNodeForID(dehydrator, argv[2]);
 
-    if ((node == NULL) && (node->element != NULL))
+    if (node == NULL)
+    {
+        RedisModule_ReplyWithError(ctx, "ERROR: No Such Element.");
+        return REDISMODULE_ERR;
+    }
+    else if (node->element != NULL)
     {
         RedisModule_ReplyWithString(ctx, node->element);
         return REDISMODULE_OK;
@@ -847,31 +860,31 @@ int TestLook(RedisModuleCtx *ctx)
 
     // size_t len
     RedisModuleCallReply *check1 =
-        RedisModule_Call(ctx, "dehydrator.look", "c", "test_element");
-    RMUtil_Assert(RedisModule_CallReplyType(check1) != REDISMODULE_REPLY_ERROR);
+        RedisModule_Call(ctx, "dehydrator.look", "cc", "D", "test_element");
+    RMUtil_Assert(RedisModule_CallReplyType(check1) == REDISMODULE_REPLY_ERROR);
     // check if X is dehydtaring (should be false)
-    RMUtil_Assert(RedisModule_CreateStringFromCallReply(check1) == NULL);
+    // RMUtil_Assert(RedisModule_CreateStringFromCallReply(check1) == NULL);
 
 
     RedisModuleCallReply *push1 =
-        RedisModule_Call(ctx, "dehydrator.push", "ccc", "test_element", "payload", "100");
+        RedisModule_Call(ctx, "dehydrator.push", "cccc", "D", "test_element", "payload", "100");
     RMUtil_Assert(RedisModule_CallReplyType(push1) != REDISMODULE_REPLY_ERROR);
 
     RedisModuleCallReply *check2 =
-        RedisModule_Call(ctx, "dehydrator.look", "c", "test_element");
+        RedisModule_Call(ctx, "dehydrator.look", "cc", "D", "test_element");
     RMUtil_Assert(RedisModule_CallReplyType(check2) != REDISMODULE_REPLY_ERROR);
     RMUtil_Assert(RedisModule_CreateStringFromCallReply(check2) != NULL); //TODO: == "payload"
 
 
     RedisModuleCallReply *pull1 =
-        RedisModule_Call(ctx, "dehydrator.pull", "c", "test_element");
+        RedisModule_Call(ctx, "dehydrator.pull", "cc", "D", "test_element");
     RMUtil_Assert(RedisModule_CallReplyType(pull1) != REDISMODULE_REPLY_ERROR);
 
     RedisModuleCallReply *check3 =
-        RedisModule_Call(ctx, "dehydrator.look", "c", "test_element");
-    RMUtil_Assert(RedisModule_CallReplyType(check3) != REDISMODULE_REPLY_ERROR);
+        RedisModule_Call(ctx, "dehydrator.look", "cc", "D", "test_element");
+    RMUtil_Assert(RedisModule_CallReplyType(check3) == REDISMODULE_REPLY_ERROR);
     // check if X is dehydtaring (should be false)
-    RMUtil_Assert(RedisModule_CreateStringFromCallReply(check3) == NULL);
+    // RMUtil_Assert(RedisModule_CreateStringFromCallReply(check3) == NULL);
 
     RedisModule_Call(ctx, "dehydrator.clear", "");;
     printf("Passed.\n");
@@ -884,16 +897,23 @@ int TestPush(RedisModuleCtx *ctx)
     RedisModule_Call(ctx, "dehydrator.clear", "");;
     printf("Testing Push - ");
     // char * element_id = "push_test_element";
+    // size_t len
+    RedisModuleCallReply *check1 =
+        RedisModule_Call(ctx, "dehydrator.look", "cc", "D", "test_element");
+    RMUtil_Assert(RedisModule_CallReplyType(check1) == REDISMODULE_REPLY_ERROR);
+    // check if X is dehydtaring (should be false)
+    // RMUtil_Assert(RedisModule_CreateStringFromCallReply(check1) == NULL);
+
     RedisModuleCallReply *push1 =
-        RedisModule_Call(ctx, "dehydrator.push", "ccc", "push_test_element", "payload", "1");
+        RedisModule_Call(ctx, "dehydrator.push", "cccc", "D", "push_test_element", "payload", "1");
     RMUtil_Assert(RedisModule_CallReplyType(push1) != REDISMODULE_REPLY_ERROR);
 
     RedisModuleString * store_key = RMUtil_CreateFormattedString(ctx, REDIS_SET_DEHYDRATED_ELEMENTS_FORMAT, "push_test_element");
 
-    RedisModuleCallReply *rep =
-        RedisModule_Call(ctx, "EXISTS", "s", store_key);
-    RMUTIL_ASSERT_NOERROR(rep);
-    RMUtil_Assert(RedisModule_CallReplyInteger(rep) == 1);
+    RedisModuleCallReply *check2 =
+        RedisModule_Call(ctx, "dehydrator.look", "cc", "D", "test_element");
+    RMUtil_Assert(RedisModule_CallReplyType(check2) != REDISMODULE_REPLY_ERROR);
+    RMUtil_Assert(RedisModule_CreateStringFromCallReply(check2) != NULL); //TODO: == "payload"
 
     // TODO: add fail-case tests
 
