@@ -258,11 +258,8 @@ Dehydrator* _createDehydrator(RedisModuleString* dehydrator_name)
 }
 
 
-Dehydrator* getDehydrator(RedisModuleCtx* ctx, RedisModuleString* dehydrator_name, int create_on_empty)
+Dehydrator* validateDehydratorKey(RedisModuleCtx* ctx, RedisModuleKey* key, int create_on_empty)
 {
-    // get key dehydrator_name
-	RedisModuleKey *key = RedisModule_OpenKey(ctx, dehydrator_name,
-		REDISMODULE_READ|REDISMODULE_WRITE);
 	int type = RedisModule_KeyType(key);
 	if (type != REDISMODULE_KEYTYPE_EMPTY &&
 		RedisModule_ModuleTypeGetType(key) != DehydratorType)
@@ -277,7 +274,6 @@ Dehydrator* getDehydrator(RedisModuleCtx* ctx, RedisModuleString* dehydrator_nam
         {
            Dehydrator* dehydrator = _createDehydrator(dehydrator_name);
            RedisModule_ModuleTypeSetValue(key, DehydratorType, dehydrator);
-           // TODO: RedisModule_CloseKey(key);
            return dehydrator;
         }
         else
@@ -289,7 +285,6 @@ Dehydrator* getDehydrator(RedisModuleCtx* ctx, RedisModuleString* dehydrator_nam
     }
 	else
 	{
-        // TODO: RedisModule_CloseKey()
 		return RedisModule_ModuleTypeGetValue(key);
 	}
 }
@@ -352,7 +347,6 @@ void deleteDehydrator(Dehydrator* dehydrator)
 
     // delete the dehydrator
     RedisModule_Free(dehydrator);
-    //TODO: RedisModule_DeleteKey
 }
 
 
@@ -506,7 +500,10 @@ void DehydratorTypeFree(void *value)
 int PollCommand_impl(RedisModuleCtx* ctx, RedisModuleString* dehydrator_name)
 {
     // get key dehydrator_name
-    Dehydrator* dehydrator = getDehydrator(ctx, dehydrator_name, 0);
+    // get key dehydrator_name
+    RedisModuleKey *key = RedisModule_OpenKey(ctx, dehydrator_name,
+        REDISMODULE_READ|REDISMODULE_WRITE);
+    Dehydrator* dehydrator = validateDehydratorKey(ctx, key, 0);
     if (dehydrator == NULL) { return REDISMODULE_ERR; } // no such dehydrator
 
     RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
@@ -539,13 +536,17 @@ int PollCommand_impl(RedisModuleCtx* ctx, RedisModuleString* dehydrator_name)
         }
     }
     RedisModule_ReplySetArrayLength(ctx, expired_element_num);
+    RedisModule_CloseKey(key);
     return REDISMODULE_OK;
 }
 
 
 int UpdateCommand_impl(RedisModuleCtx* ctx, RedisModuleString* dehydrator_name, RedisModuleString* element_id,  RedisModuleString* updated_element)
 {
-	Dehydrator * dehydrator = getDehydrator(ctx, dehydrator_name ,0);
+    // get key dehydrator_name
+    RedisModuleKey *key = RedisModule_OpenKey(ctx, dehydrator_name,
+        REDISMODULE_READ|REDISMODULE_WRITE);
+	Dehydrator * dehydrator = validateDehydratorKey(ctx, key ,0);
 	if (dehydrator == NULL) { return REDISMODULE_ERR; }
 
     ElementListNode* node = _getNodeForID(dehydrator, element_id);
@@ -558,6 +559,7 @@ int UpdateCommand_impl(RedisModuleCtx* ctx, RedisModuleString* dehydrator_name, 
     RedisModule_ReplyWithString(ctx, node->element);
     node->element = updated_element;
 
+    RedisModule_CloseKey(key);
     return REDISMODULE_OK;
 }
 
@@ -565,7 +567,9 @@ int UpdateCommand_impl(RedisModuleCtx* ctx, RedisModuleString* dehydrator_name, 
 int TimeToNextCommand_impl(RedisModuleCtx* ctx, RedisModuleString* dehydrator_name)
 {
     // get key dehydrator_name
-    Dehydrator* dehydrator = getDehydrator(ctx, dehydrator_name, 0);
+    // get key dehydrator_name
+    RedisModuleKey *key = RedisModule_OpenKey(ctx, dehydrator_name, REDISMODULE_READ);
+    Dehydrator* dehydrator = validateDehydratorKey(ctx, key, 0);
     if (dehydrator == NULL) { return REDISMODULE_ERR; } // no such dehydrator
 
     int time_to_next = -1;
@@ -589,6 +593,8 @@ int TimeToNextCommand_impl(RedisModuleCtx* ctx, RedisModuleString* dehydrator_na
             }
         }
     }
+
+    RedisModule_CloseKey(key);
     return time_to_next;
 }
 
@@ -691,11 +697,13 @@ int PrintCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     {
       return RedisModule_WrongArity(ctx);
     }
-    // RedisModule_AutoMemory(ctx);
-    Dehydrator* dehydrator = getDehydrator(ctx, argv[1], 0);
+    // get key dehydrator_name
+    RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ);
+    Dehydrator* dehydrator = validateDehydratorKey(ctx, key, 0);
     if (dehydrator == NULL) { return REDISMODULE_ERR; } // no such dehydrator
 
     printDehydrator(dehydrator);
+    RedisModule_CloseKey(key);
     RedisModule_ReplyWithSimpleString(ctx, "DONE");
     return REDISMODULE_OK;
 }
@@ -708,10 +716,14 @@ int ClearDehydratorCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
       return RedisModule_WrongArity(ctx);
     }
     RedisModule_AutoMemory(ctx);
-    Dehydrator* dehydrator = getDehydrator(ctx, argv[1], 0);
+    RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1],
+        REDISMODULE_READ|REDISMODULE_WRITE);
+    Dehydrator* dehydrator = validateDehydratorKey(ctx, key, 0);
     if (dehydrator == NULL) { return REDISMODULE_ERR; } // no such dehydrator
 
     deleteDehydrator(dehydrator);
+    RedisModule_CloseKey(key);
+    RedisModule_DeleteKey(key);
     RedisModule_ReplyWithSimpleString(ctx, "DONE");
     return REDISMODULE_OK;
 }
@@ -724,8 +736,8 @@ int LookCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
       return RedisModule_WrongArity(ctx);
     }
     // RedisModule_AutoMemory(ctx);
-
-    Dehydrator * dehydrator = getDehydrator(ctx, argv[1], 0);
+    RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ);
+    Dehydrator * dehydrator = validateDehydratorKey(ctx, key, 0);
     if (dehydrator == NULL) { return REDISMODULE_ERR; }
 
     printRedisStr(argv[2], "argv[2]");
@@ -734,15 +746,18 @@ int LookCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     if (node == NULL)
     {
         RedisModule_ReplyWithError(ctx, "ERROR: No Such Element.");
+        RedisModule_CloseKey(key);
         return REDISMODULE_ERR;
     }
     else if (node->element != NULL)
     {
         RedisModule_ReplyWithString(ctx, node->element);
+        RedisModule_CloseKey(key);
         return REDISMODULE_OK;
     }
 
     RedisModule_ReplyWithNull(ctx);
+    RedisModule_CloseKey(key);
     return REDISMODULE_OK;
 }
 
@@ -772,7 +787,9 @@ int PushCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     if (rep == REDISMODULE_ERR) { return REDISMODULE_ERR; }
 
     // get key dehydrator_name
-    Dehydrator* dehydrator = getDehydrator(ctx, dehydrator_name, 1);
+    RedisModuleKey *key = RedisModule_OpenKey(ctx, dehydrator_name,
+        REDISMODULE_READ|REDISMODULE_WRITE);
+    Dehydrator* dehydrator = validateDehydratorKey(ctx, key, 1);
     if (dehydrator == NULL) { return REDISMODULE_ERR; } // no such dehydrator
 
     printf("pushing - %s,%s for %d into %s\n",RedisModule_StringPtrLen(element_id, NULL), RedisModule_StringPtrLen(element, NULL), ttl, RedisModule_StringPtrLen(dehydrator_name, NULL) );
@@ -815,6 +832,7 @@ int PushCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 	k = kh_put(32, dehydrator->element_nodes, RedisModule_StringPtrLen(saved_element_id, NULL), &retval);
 	kh_value(dehydrator->element_nodes, k) = node;
     RedisModule_ReplyWithSimpleString(ctx, "OK");
+    RedisModule_CloseKey(key);
     return REDISMODULE_OK;
 }
 
@@ -832,7 +850,9 @@ int PullCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     RedisModule_AutoMemory(ctx);
 
     // get key dehydrator_name
-    Dehydrator * dehydrator = getDehydrator(ctx, argv[1], 0);
+    RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1],
+        REDISMODULE_READ|REDISMODULE_WRITE);
+    Dehydrator * dehydrator = validateDehydratorKey(ctx, key, 0);
     if (dehydrator == NULL) { return REDISMODULE_ERR; }
 
     ElementListNode* node = _getNodeForID(dehydrator, argv[2]);
@@ -840,6 +860,7 @@ int PullCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     {
         // no element with such element_id
         RedisModule_ReplyWithNull(ctx);
+        RedisModule_CloseKey(key);
         return REDISMODULE_ERR;
     }
 
@@ -848,9 +869,11 @@ int PullCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     if (node->element == NULL)
     {
         RedisModule_ReplyWithNull(ctx);
+        RedisModule_CloseKey(key);
         return REDISMODULE_OK;
     }
     RedisModule_ReplyWithString(ctx, node->element);
+    RedisModule_CloseKey(key);
     return REDISMODULE_OK;
 }
 
