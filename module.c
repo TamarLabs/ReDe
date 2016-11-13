@@ -327,7 +327,7 @@ ElementListNode* _getNodeForID(Dehydrator* dehydrator, RedisModuleString* elemen
 {
         // now we know we have a dehydrator get element node from element_nodes
 		ElementListNode* node = NULL;
-        printRedisStr(element_id, RedisModule_StringPtrLen(dehydrator->name, NULL));
+        printRedisStr(element_id, RedisModule_StringPtrLen(dehydrator->name, NULL)); // TODO: remove
 		khiter_t k = kh_get(32, dehydrator->element_nodes, RedisModule_StringPtrLen(element_id, NULL));  // first have to get iterator
 		if (k != kh_end(dehydrator->element_nodes)) // k will be equal to kh_end if key not present
 		{
@@ -487,25 +487,19 @@ int PollCommand_impl(RedisModuleCtx* ctx, RedisModuleString* dehydrator_name)
 }
 
 
-int DeleteCommand_impl(RedisModuleCtx* ctx, RedisModuleString* dehydrator_name)
-{
-    Dehydrator* dehydrator = getDehydrator(ctx, dehydrator_name, 0);
-    if (dehydrator == NULL) { return REDISMODULE_ERR; } // no such dehydrator
-
-    deleteDehydrator(dehydrator);
-
-    return REDISMODULE_OK;
-}
-
-
 int UpdateCommand_impl(RedisModuleCtx* ctx, RedisModuleString* dehydrator_name, RedisModuleString* element_id,  RedisModuleString* updated_element)
 {
 	Dehydrator * dehydrator = getDehydrator(ctx, dehydrator_name ,0);
 	if (dehydrator == NULL) { return REDISMODULE_ERR; }
 
     ElementListNode* node = _getNodeForID(dehydrator, element_id);
-    if (node == NULL) { return REDISMODULE_ERR; } // no element with such element_id
+    if (node == NULL)
+    {
+        RedisModule_ReplyWithError(ctx, "ERROR: No Such Element.");
+        return REDISMODULE_ERR;
+    } // no element with such element_id
 
+    RedisModule_ReplyWithString(ctx, node->element);
     node->element = updated_element;
 
     return REDISMODULE_OK;
@@ -642,7 +636,12 @@ int ClearDehydratorCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
       return RedisModule_WrongArity(ctx);
     }
     RedisModule_AutoMemory(ctx);
-    return DeleteCommand_impl(ctx, argv[1]);
+    Dehydrator* dehydrator = getDehydrator(ctx, argv[1], 0);
+    if (dehydrator == NULL) { return REDISMODULE_ERR; } // no such dehydrator
+
+    deleteDehydrator(dehydrator);
+
+    return REDISMODULE_OK;
 }
 
 
