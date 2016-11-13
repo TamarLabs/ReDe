@@ -14,6 +14,10 @@
 #include "rmutil/alloc.h"
 
 
+void printRedisStr(RedisModuleString *str, const char* name) {
+    printf("%s = %s\n", name, RedisModule_StringPtrLen(str, NULL));
+}
+
 //##########################################################
 //#
 //#                     Linked List
@@ -60,7 +64,6 @@ typedef struct dehydrator{
     khash_t(32) * element_nodes; //<element_id,node*>
     RedisModuleString* name;
 } Dehydrator;
-
 
 
 //##########################################################
@@ -116,10 +119,12 @@ void _listPush(ElementList* list, ElementListNode* node)
 
 // pull and return the element at the first location
 ElementListNode* _listPop(ElementList* list) {
-   ElementListNode* head = list->head;
+   if ((list == NULL) || (list->head == NULL)) { return NULL; } // if list empty
 
-   if (head == NULL) { return NULL; } // if list empty
-   if (head->next == NULL) { list->tail = NULL; } // if only one link
+   if (list->head->next == NULL) { list->tail = NULL; } // if only one link
+
+   //save current head
+   ElementListNode* head = list->head;
 
    // swap to new head
    list->head = head->next;
@@ -229,7 +234,7 @@ Dehydrator* _createDehydrator(RedisModuleString* dehydrator_name)
 }
 
 
-Dehydrator* getDehydrator(RedisModuleCtx* ctx, RedisModuleString* dehydrator_name)
+Dehydrator* getDehydrator(RedisModuleCtx* ctx, RedisModuleString* dehydrator_name, int create_on_empty)
 {
     // get key dehydrator_name
 	RedisModuleKey *key = RedisModule_OpenKey(ctx, dehydrator_name,
@@ -238,14 +243,22 @@ Dehydrator* getDehydrator(RedisModuleCtx* ctx, RedisModuleString* dehydrator_nam
 	if (type != REDISMODULE_KEYTYPE_EMPTY &&
 		RedisModule_ModuleTypeGetType(key) != DehydratorType)
 	{
-		// key contains somthing that is not a dehydrator
-		return NULL;// TODO: RedisModule_ReplyWithError(ctx,REDISMODULE_ERRORMSG_WRONGTYPE);
+        RedisModule_ReplyWithError(ctx,REDISMODULE_ERRORMSG_WRONGTYPE);
+		return NULL;
 	}
 	if (type == REDISMODULE_KEYTYPE_EMPTY)
     {
-       Dehydrator* dehydrator = _createDehydrator(dehydrator_name);
-       RedisModule_ModuleTypeSetValue(key, DehydratorType, dehydrator);
-       return dehydrator;
+        if (create_on_empty)
+        {
+           Dehydrator* dehydrator = _createDehydrator(dehydrator_name);
+           RedisModule_ModuleTypeSetValue(key, DehydratorType, dehydrator);
+           return dehydrator;
+        }
+        else
+        {
+            RedisModule_ReplyWithError(ctx, "ERROR: No Such dehydrator.");
+            return NULL;
+        }
     }
 	else
 	{
@@ -314,6 +327,7 @@ ElementListNode* _getNodeForID(Dehydrator* dehydrator, RedisModuleString* elemen
 {
         // now we know we have a dehydrator get element node from element_nodes
 		ElementListNode* node = NULL;
+        printRedisStr(element_id, RedisModule_StringPtrLen(dehydrator->name, NULL));
 		khiter_t k = kh_get(32, dehydrator->element_nodes, RedisModule_StringPtrLen(element_id, NULL));  // first have to get iterator
 		if (k != kh_end(dehydrator->element_nodes)) // k will be equal to kh_end if key not present
 		{
@@ -321,14 +335,6 @@ ElementListNode* _getNodeForID(Dehydrator* dehydrator, RedisModuleString* elemen
 		}
         return node;
 }
-
-// char* _toQueueName(int ttl)
-// {
-// 	if (ttl > 315400000000) { ttl = 315400000000; } // you know, a decade has only 3.154e+11 milliseconds in it..
-// 	char* queue_name = (char*)RedisModule_Alloc(sizeof(char)*32); // 12 + 14 + some good measure
-// 	sprintf(queue_name, "timeout_queue#%s", ttl);
-//     return queue_name;
-// }
 
 
 //##########################################################
@@ -441,73 +447,14 @@ void DehydratorTypeFree(void *value)
 //#
 //#########################################################
 
-int PushCommand_impl(RedisModuleCtx* ctx, RedisModuleString* dehydrator_name, RedisModuleString* element_id, RedisModuleString* element, int ttl)
+int PollCommand_impl(RedisModuleCtx* ctx, RedisModuleString* dehydrator_name)
 {
     // get key dehydrator_name
-    Dehydrator* dehydrator = getDehydrator(ctx, dehydrator_name);
+    Dehydrator* dehydrator = getDehydrator(ctx, dehydrator_name, 0);
     if (dehydrator == NULL) { return REDISMODULE_ERR; } // no such dehydrator
 
-    // now we know we have a dehydrator check if there is anything in id = element_id
-    ElementListNode* node = _getNodeForID(dehydrator, element_id);
-    if (node != NULL) // somthing is already there
-    {
-        return REDISMODULE_ERR;
-    }
-
-    // get timeout_queues[ttl]
-	ElementList* timeout_queue = NULL;
-	khiter_t k = kh_get(16, dehydrator->timeout_queues, ttl);  // first have to get iterator
-	if (k != kh_end(dehydrator->timeout_queues)) // k will be equal to kh_end if key not present
-	{
-		timeout_queue = kh_val(dehydrator->timeout_queues, k);
-	}
-    if (timeout_queue == NULL) //does not exist
-    {
-        // create an empty ElementList and add it to timeout_queues
-        timeout_queue = _createNewList();
-		int retval;
-        k = kh_put(16, dehydrator->timeout_queues, ttl, &retval);
-        kh_value(dehydrator->timeout_queues, k) = timeout_queue;
-    }
-
-    //create an ElementListNode
-    node  = _createNewNode(element, element_id, ttl, time(0) + ttl);
-
-    // push to tail of the list
-    _listPush(timeout_queue, node);
-
-    // mark element dehytion location in element_nodes
-	int retval;
-	k = kh_put(32, dehydrator->element_nodes, RedisModule_StringPtrLen(element_id, NULL), &retval);
-	kh_value(dehydrator->element_nodes, k) = node;
-
-    return REDISMODULE_OK;
-}
-
-
-RedisModuleString* PullCommand_impl(RedisModuleCtx* ctx, RedisModuleString* dehydrator_name, RedisModuleString* element_id)
-{
-	// get key dehydrator_name
-	Dehydrator * dehydrator = getDehydrator(ctx, dehydrator_name);
-	if (dehydrator == NULL) { return NULL; }
-
-    ElementListNode* node = _getNodeForID(dehydrator, element_id);
-    if (node == NULL) { return NULL; } // no element with such element_id
-
-    _listPull(dehydrator, node);
-
-    return node->element;
-}
-
-
-ElementList* PollCommand_impl(RedisModuleCtx* ctx, RedisModuleString* dehydrator_name)
-{
-    // get key dehydrator_name
-    Dehydrator* dehydrator = getDehydrator(ctx, dehydrator_name);
-    if (dehydrator == NULL) { return NULL; } // no such dehydrator
-
-    ElementList* pulled_elements = _createNewList(); // TODO: use vector
-
+    RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
+    int expired_element_num = 0;
     // for each timeout_queue in timeout_queues
 	khiter_t k;
 	for (k = kh_begin(dehydrator->timeout_queues); k != kh_end(dehydrator->timeout_queues); ++k)
@@ -515,12 +462,14 @@ ElementList* PollCommand_impl(RedisModuleCtx* ctx, RedisModuleString* dehydrator
         if (!kh_exist(dehydrator->timeout_queues, k)) continue;
         ElementList* list = kh_value(dehydrator->timeout_queues, k);
         int done_with_queue = 0;
-        while (!done_with_queue)
+        while ((list != NULL) && (!done_with_queue))
         {
             ElementListNode* head = list->head;
             if ((head != NULL) && (head->expiration < time(0)))
             {
-                _listPush(pulled_elements ,_listPop(list)); // append head->element to output
+                ElementListNode* node = _listPop(list);
+                RedisModule_ReplyWithString(ctx, node->element); // append head->element to output
+                ++expired_element_num;
             }
             else
             {
@@ -533,26 +482,14 @@ ElementList* PollCommand_impl(RedisModuleCtx* ctx, RedisModuleString* dehydrator
             }
         }
     }
-
-    return pulled_elements;
-}
-
-
-RedisModuleString* LookCommand_impl(RedisModuleCtx* ctx, RedisModuleString* dehydrator_name, RedisModuleString* element_id)
-{
-	Dehydrator * dehydrator = getDehydrator(ctx, dehydrator_name);
-	if (dehydrator == NULL) { return NULL; }
-
-    ElementListNode* node = _getNodeForID(dehydrator, element_id);
-    if (node == NULL) { return NULL; } // no element with such element_id
-
-    return node->element;
+    RedisModule_ReplySetArrayLength(ctx, expired_element_num);
+    return REDISMODULE_OK;
 }
 
 
 int DeleteCommand_impl(RedisModuleCtx* ctx, RedisModuleString* dehydrator_name)
 {
-    Dehydrator* dehydrator = getDehydrator(ctx, dehydrator_name);
+    Dehydrator* dehydrator = getDehydrator(ctx, dehydrator_name, 0);
     if (dehydrator == NULL) { return REDISMODULE_ERR; } // no such dehydrator
 
     deleteDehydrator(dehydrator);
@@ -563,7 +500,7 @@ int DeleteCommand_impl(RedisModuleCtx* ctx, RedisModuleString* dehydrator_name)
 
 int UpdateCommand_impl(RedisModuleCtx* ctx, RedisModuleString* dehydrator_name, RedisModuleString* element_id,  RedisModuleString* updated_element)
 {
-	Dehydrator * dehydrator = getDehydrator(ctx, dehydrator_name);
+	Dehydrator * dehydrator = getDehydrator(ctx, dehydrator_name ,0);
 	if (dehydrator == NULL) { return REDISMODULE_ERR; }
 
     ElementListNode* node = _getNodeForID(dehydrator, element_id);
@@ -578,7 +515,7 @@ int UpdateCommand_impl(RedisModuleCtx* ctx, RedisModuleString* dehydrator_name, 
 int TimeToNextCommand_impl(RedisModuleCtx* ctx, RedisModuleString* dehydrator_name)
 {
     // get key dehydrator_name
-    Dehydrator* dehydrator = getDehydrator(ctx, dehydrator_name);
+    Dehydrator* dehydrator = getDehydrator(ctx, dehydrator_name, 0);
     if (dehydrator == NULL) { return REDISMODULE_ERR; } // no such dehydrator
 
     int time_to_next = -1;
@@ -631,19 +568,7 @@ int TimeToNextCommand_impl(RedisModuleCtx* ctx, RedisModuleString* dehydrator_na
 #define REDIS_SET_DEHYDRATED_ELEMENTS_FORMAT "%s:element_dehydrating"
 #define REDIS_SET_DEHYDRATED_ELEMENTS_FORMAT_PATTERN "*:element_dehydrating"
 
-void printRedisStr(RedisModuleString *str, const char* name) {
-    const char *c;
-    if (str == NULL)
-    {
-        c = NULL;
-    }
-    else
-    {
-        size_t len;
-        c = RedisModule_StringPtrLen(str, &len);
-    }
-    printf("%s = %s\n", name, c);
-}
+
 
 
 void* OpenKeyC(RedisModuleCtx *ctx, char* key_name, int mode)
@@ -712,68 +637,36 @@ bool _test_set_is_element_dehydrating_now(RedisModuleCtx *ctx, RedisModuleString
 
 int ClearDehydratorCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 {
-    if (argc != 1)
-    {
-      return RedisModule_WrongArity(ctx);
-    }
-    RedisModule_AutoMemory(ctx);
-
-    RedisModuleCallReply *rep =
-        RedisModule_Call(ctx, "KEYS", "c", REDIS_QUEUE_NAME_FORMAT_PATTERN);
-    size_t timeout_num = RedisModule_CallReplyLength(rep);
-    for (int i=0; i<timeout_num; i++)
-    {
-
-        RedisModuleCallReply *timeouts_reply = RedisModule_CallReplyArrayElement(rep, i);
-        RedisModuleString * timeout_queue = RedisModule_CreateStringFromCallReply(timeouts_reply);
-        RedisModule_Call(ctx, "DEL", "s", timeout_queue);
-    }
-
-    RedisModule_Call(ctx, "DEL", "c", REDIS_QUEUE_MAP);
-    RedisModule_Call(ctx, "DEL", "c", REDIS_ELEMENT_MAP);
-    RedisModule_Call(ctx, "DEL", "c", REDIS_EXPIRATION_MAP);
-
-    RedisModuleCallReply *rep2 =
-        RedisModule_Call(ctx, "KEYS", "c", REDIS_SET_DEHYDRATED_ELEMENTS_FORMAT_PATTERN);
-    size_t element_num = RedisModule_CallReplyLength(rep2);
-
-    for (int i=0; i<element_num; i++)
-    {
-
-        RedisModuleCallReply *element_reply = RedisModule_CallReplyArrayElement(rep2, i);
-        RedisModuleString * element = RedisModule_CreateStringFromCallReply(element_reply);
-        RedisModule_Call(ctx, "DEL", "s", element);
-    }
-    RedisModule_ReplyWithSimpleString(ctx, "OK");
-    return REDISMODULE_OK;
-}
-
-
-int IsDehydratingCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
-{
     if (argc != 2)
     {
       return RedisModule_WrongArity(ctx);
     }
     RedisModule_AutoMemory(ctx);
+    return DeleteCommand_impl(ctx, argv[1]);
+}
 
-    RedisModuleString *element = NULL;
-    int rep = REDISMODULE_OK;
-    RedisModuleKey* REDIS_ELEMENT_MAP_key = OpenKeyC(ctx, REDIS_ELEMENT_MAP, REDISMODULE_READ);
-    if (REDIS_ELEMENT_MAP_key != NULL)
+
+int LookCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
+{
+    if (argc != 3)
     {
-        rep = RedisModule_HashGet(REDIS_ELEMENT_MAP_key, REDISMODULE_HASH_NONE, argv[1], &element, NULL);
+      return RedisModule_WrongArity(ctx);
     }
-    RedisModule_CloseKey(REDIS_ELEMENT_MAP_key);
+    RedisModule_AutoMemory(ctx);
 
-    if (rep != REDISMODULE_ERR && element != NULL)
+    Dehydrator * dehydrator = getDehydrator(ctx, argv[1], 0);
+    if (dehydrator == NULL) { return REDISMODULE_ERR; }
+
+    ElementListNode* node = _getNodeForID(dehydrator, argv[2]);
+
+    if ((node == NULL) && (node->element != NULL))
     {
-        RedisModule_ReplyWithString(ctx, element);
+        RedisModule_ReplyWithString(ctx, node->element);
         return REDISMODULE_OK;
     }
 
     RedisModule_ReplyWithNull(ctx);
-    return rep;
+    return REDISMODULE_OK;
 }
 
 
@@ -783,44 +676,63 @@ int IsDehydratingCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc
 */
 int PushCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 {
-    // we need EXACTLY 4 arguments
-    if (argc != 4)
+    // we need EXACTLY 5 arguments
+    if (argc != 5)
     {
       return RedisModule_WrongArity(ctx);
     }
     RedisModule_AutoMemory(ctx);
 
-    RedisModuleString * element_id = argv[1];
-    RedisModuleString * element = argv[2];
-    RedisModuleString * timeout = argv[3];
+    RedisModuleString* dehydrator_name = argv[1];
+    RedisModuleString * element_id = argv[2];
+    RedisModuleString * element = argv[3];
+    RedisModuleString * timeout = argv[4];
 
-    if (_test_set_is_element_dehydrating_now(ctx, element_id))
+    // timeout str to int ttl
+    long long ttl;
+    int rep = RedisModule_StringToLongLong(timeout, &ttl);
+
+    if (rep == REDISMODULE_ERR) { return REDISMODULE_ERR; }
+
+    // get key dehydrator_name
+    Dehydrator* dehydrator = getDehydrator(ctx, dehydrator_name, 1);
+    if (dehydrator == NULL) { return REDISMODULE_ERR; } // no such dehydrator
+
+    printf("pushing - %s,%s for %d into %s\n",RedisModule_StringPtrLen(element_id, NULL), RedisModule_StringPtrLen(element, NULL), ttl, RedisModule_StringPtrLen(dehydrator_name, NULL) );
+    // now we know we have a dehydrator check if there is anything in id = element_id
+    ElementListNode* node = _getNodeForID(dehydrator, element_id);
+    if (node != NULL) // somthing is already there
     {
         RedisModule_ReplyWithError(ctx, "ERROR: Element already dehydrating.");
         return REDISMODULE_ERR;
     }
 
-    RedisModuleString * dehydration_queue_name = _format_single_redis_module_string(ctx, REDIS_QUEUE_NAME_FORMAT, timeout);
+    // get timeout_queues[ttl]
+	ElementList* timeout_queue = NULL;
+	khiter_t k = kh_get(16, dehydrator->timeout_queues, ttl);  // first have to get iterator
+	if (k != kh_end(dehydrator->timeout_queues)) // k will be equal to kh_end if key not present
+	{
+		timeout_queue = kh_val(dehydrator->timeout_queues, k);
+	}
+    if (timeout_queue == NULL) //does not exist
+    {
+        // create an empty ElementList and add it to timeout_queues
+        timeout_queue = _createNewList();
+		int retval;
+        k = kh_put(16, dehydrator->timeout_queues, ttl, &retval);
+        kh_value(dehydrator->timeout_queues, k) = timeout_queue;
+    }
 
-    // make sure we have the queue listed
-    RedisModule_Call(ctx, "HSET", "css", REDIS_QUEUE_MAP, element_id, dehydration_queue_name);
+    //create an ElementListNode
+    node  = _createNewNode(element, element_id, ttl, time(0) + ttl);
 
-    // add the element to the dehydrating elements map
-    RedisModule_Call(ctx, "HSET", "css", REDIS_ELEMENT_MAP, element_id, element);
+    // push to tail of the list
+    _listPush(timeout_queue, node);
 
-
-    time_t result = time(NULL);
-    long long timeout_int;
-    RedisModule_StringToLongLong(argv[3], &timeout_int);
-    long long expiration = (uintmax_t)result + timeout_int;
-
-    // add the element to the element expiration hash
-    char expiration_buffer[256];
-    sprintf(expiration_buffer, "%lld", expiration);
-    RedisModule_Call(ctx, "HSETNX", "csc", REDIS_EXPIRATION_MAP, element_id, expiration_buffer);
-
-    // add the elemet id to the actual dehydration queue
-    RedisModule_Call(ctx, "RPUSH", "ss", dehydration_queue_name, element_id);
+    // mark element dehytion location in element_nodes
+	int retval;
+	k = kh_put(32, dehydrator->element_nodes, RedisModule_StringPtrLen(element_id, NULL), &retval);
+	kh_value(dehydrator->element_nodes, k) = node;
 
     RedisModule_ReplyWithSimpleString(ctx, "OK");
     return REDISMODULE_OK;
@@ -865,18 +777,32 @@ RedisModuleString * _pull(RedisModuleCtx *ctx, RedisModuleString * element_id, R
 */
 int PullCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 {
-    if (argc != 2)
+    if (argc != 3)
     {
       return RedisModule_WrongArity(ctx);
     }
     RedisModule_AutoMemory(ctx);
-    RedisModuleString * element = _pull(ctx, argv[1], NULL);
-    if (element == NULL)
+
+    // get key dehydrator_name
+    Dehydrator * dehydrator = getDehydrator(ctx, argv[1], 0);
+    if (dehydrator == NULL) { return REDISMODULE_ERR; }
+
+    ElementListNode* node = _getNodeForID(dehydrator, argv[2]);
+    if (node == NULL)
     {
+        // no element with such element_id
         RedisModule_ReplyWithNull(ctx);
         return REDISMODULE_ERR;
     }
-    RedisModule_ReplyWithString(ctx, element);
+
+    _listPull(dehydrator, node);
+
+    if (node->element == NULL)
+    {
+        RedisModule_ReplyWithNull(ctx);
+        return REDISMODULE_OK;
+    }
+    RedisModule_ReplyWithString(ctx, node->element);
     return REDISMODULE_OK;
 }
 
@@ -905,56 +831,13 @@ RedisModuleString * _inspect(RedisModuleCtx *ctx, RedisModuleString * element_id
 */
 int PollCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 {
-    if (argc != 1)
+    if (argc != 2)
     {
       return RedisModule_WrongArity(ctx);
     }
 
     RedisModule_AutoMemory(ctx);
-    RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
-    int expired_element_num = 0;
-    RedisModuleCallReply *rep =
-        RedisModule_Call(ctx, "KEYS", "c", REDIS_QUEUE_NAME_FORMAT_PATTERN);
-    size_t timeout_num = RedisModule_CallReplyLength(rep);
-    for (int i=0; i<timeout_num; i++)
-    {
-
-        RedisModuleCallReply *timeouts_reply = RedisModule_CallReplyArrayElement(rep, i);
-        RedisModuleString * timeout_queue = RedisModule_CreateStringFromCallReply(timeouts_reply);
-        RedisModuleKey * timeout_queue_key =
-            RedisModule_OpenKey(ctx, timeout_queue, REDISMODULE_READ | REDISMODULE_WRITE);
-        bool should_pop_next = true;
-        while (should_pop_next)
-        {
-            RedisModuleString * element_id = RedisModule_ListPop(timeout_queue_key , REDISMODULE_LIST_HEAD);
-            if (element_id != NULL)
-            {
-                RedisModuleString * element = _inspect(ctx, element_id, timeout_queue);
-                if (element != NULL)
-                {
-                    // element was rehydrated, return again to this queue to see if
-                    // there are more rehydratable elements
-                    RedisModule_ReplyWithString(ctx, element);
-                    expired_element_num++;
-                }
-                else
-                {
-                    // this element needs to dehydrate longer, push it back
-                    // to the front of the queue
-                    RedisModule_ListPush(timeout_queue_key , REDISMODULE_LIST_HEAD, element_id);
-                    should_pop_next = false;
-                }
-            }
-            else
-            {
-                should_pop_next = false;
-            }
-        }
-        RedisModule_CloseKey(timeout_queue_key);
-    }
-
-    RedisModule_ReplySetArrayLength(ctx, expired_element_num);
-    return REDISMODULE_OK;
+    return PollCommand_impl(ctx, argv[1]);
 }
 
 
@@ -1218,7 +1101,7 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx)
     RMUtil_RegisterWriteCmd(ctx, "dehydrator.poll", PollCommand);
 
     // register dehydrator.look - using the shortened utility registration macro
-    RMUtil_RegisterReadCmd(ctx, "dehydrator.look", IsDehydratingCommand);
+    RMUtil_RegisterReadCmd(ctx, "dehydrator.look", LookCommand);
 
     // register the unit test
     RMUtil_RegisterWriteCmd(ctx, "dehydrator.test", TestModule);
