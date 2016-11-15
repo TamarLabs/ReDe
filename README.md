@@ -108,7 +108,7 @@ This `(empty list or set)` reply from `DEHYDRATOR.POLL` means that the there are
 1) "world"
 127.0.0.1:9979> DEHYDRATOR.TEST
 PASS
-(11.00s)
+(15.00s)
 127.0.0.1:9979> DEL some_dehy
 OK
 ```
