@@ -300,8 +300,6 @@ Dehydrator* validateDehydratorKey(RedisModuleCtx* ctx, RedisModuleKey* key, Redi
         }
         else
         {
-            // RedisModule_ReplyWithError(ctx, "ERROR: No Such dehydrator.");
-            RedisModule_ReplyWithNull(ctx);
             RedisModule_CloseKey(key);
             return NULL;
         }
@@ -519,7 +517,11 @@ int UpdateCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     RedisModuleKey *key = RedisModule_OpenKey(ctx, dehydrator_name,
         REDISMODULE_READ|REDISMODULE_WRITE);
 	Dehydrator * dehydrator = validateDehydratorKey(ctx, key, NULL);
-	if (dehydrator == NULL) { return REDISMODULE_OK; }
+	if (dehydrator == NULL)
+    {
+        RedisModule_ReplyWithError(ctx, "ERROR: No Such dehydrator.");
+        return REDISMODULE_ERR;
+    }
 
     ElementListNode* node = _getNodeForID(dehydrator, element_id);
     if (node == NULL)
@@ -549,7 +551,11 @@ int TimeToNextCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     // get key dehydrator_name
     RedisModuleKey *key = RedisModule_OpenKey(ctx, dehydrator_name, REDISMODULE_READ);
     Dehydrator* dehydrator = validateDehydratorKey(ctx, key, NULL);
-    if (dehydrator == NULL) { return REDISMODULE_OK; } // no such dehydrator
+    if (dehydrator == NULL)
+    {
+        RedisModule_ReplyWithNull(ctx);
+        return REDISMODULE_OK;
+    }
 
     int time_to_next = -1;
 
@@ -590,7 +596,11 @@ int PrintCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     // get key dehydrator_name
     RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ);
     Dehydrator* dehydrator = validateDehydratorKey(ctx, key, NULL);
-    if (dehydrator == NULL) { return REDISMODULE_OK; } // no such dehydrator
+    if (dehydrator == NULL)
+    {
+        RedisModule_ReplyWithNull(ctx);
+        return REDISMODULE_OK;
+    }
 
     printDehydrator(dehydrator);
     RedisModule_CloseKey(key);
@@ -608,7 +618,11 @@ int LookCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     // RedisModule_AutoMemory(ctx);
     RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ);
     Dehydrator * dehydrator = validateDehydratorKey(ctx, key, NULL);
-    if (dehydrator == NULL) { return REDISMODULE_OK; }
+    if (dehydrator == NULL)
+    {
+        RedisModule_ReplyWithNull(ctx);
+        return REDISMODULE_OK;
+    }
 
     ElementListNode* node = _getNodeForID(dehydrator, argv[2]);
 
@@ -653,7 +667,11 @@ int PushCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     RedisModuleKey *key = RedisModule_OpenKey(ctx, dehydrator_name,
         REDISMODULE_READ|REDISMODULE_WRITE);
     Dehydrator* dehydrator = validateDehydratorKey(ctx, key, dehydrator_name);
-    if (dehydrator == NULL) { return REDISMODULE_ERR; } // no such dehydrator
+    if (dehydrator == NULL)
+    {
+        RedisModule_ReplyWithError(ctx, "ERROR: No Such dehydrator.");
+        return REDISMODULE_ERR;
+    }
 
     // now we know we have a dehydrator check if there is anything in id = element_id
     ElementListNode* node = _getNodeForID(dehydrator, element_id);
@@ -715,7 +733,11 @@ int PullCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1],
         REDISMODULE_READ|REDISMODULE_WRITE);
     Dehydrator * dehydrator = validateDehydratorKey(ctx, key, NULL);
-    if (dehydrator == NULL) { return REDISMODULE_OK; }
+    if (dehydrator == NULL)
+    {
+        RedisModule_ReplyWithNull(ctx);
+        return REDISMODULE_OK;
+    }
 
     ElementListNode* node = _getNodeForID(dehydrator, argv[2]);
     if (node != NULL)
@@ -759,7 +781,11 @@ int PollCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1],
         REDISMODULE_READ|REDISMODULE_WRITE);
     Dehydrator* dehydrator = validateDehydratorKey(ctx, key, NULL);
-    if (dehydrator == NULL) { return REDISMODULE_OK; } // no such dehydrator
+    if (dehydrator == NULL)
+    {
+        RedisModule_ReplyWithNull(ctx);
+        return REDISMODULE_OK;
+    }
 
     RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
     int expired_element_num = 0;
