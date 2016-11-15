@@ -8,6 +8,8 @@ Using this system it is also possible to craft a self cleaning "claims check", t
 
 You can read further on the algorithm behind this module [here](Algorithm.md).
 
+The module works by adding a new type to Redis -`DehydratorType`. It will be ceated automatically when you call a push command on it, and it can be deleted using the `DEL` command like any other key.
+
 ![a gif that shows basic usage](redehy-basics.gif)
 
 ## What it includes:
@@ -22,9 +24,13 @@ In this repository there are two python files that exemplify the usage of the mo
 * [helloworld.py](helloworld.py) - very simple usage example of all the functions exposed by the module
 * [test.py](test.py) - run internal as well as external functional tests, load test and print it all to stdout.
 
-### 3. LibRMUtil
+### 3. klib [khash](khash.h)
 
-From [Redis Modules SDK](https://github.com/RedisLabs/RedisModulesSDK) Readme:
+A set of macros to create the hash maps used to implement the dehydrator type.
+
+### 4. LibRMUtil
+
+From [Redis Modules SDK](https://github.com/RedisLabs/RedisModulesSDK) README:
 
 A small library of utility functions and macros for module developers, including:
 
@@ -50,7 +56,6 @@ The dehydrator is an effective 'snooze button' for events, you push an event int
 * `DEHYDRATOR.LOOK` - search the dehydrator for an element with the given id and if found return it's payload (without pulling).
 
 **The module also includes 2 assistive commands:**
-* `DEHYDRATOR.CLEAR` - remove all the elements from the dehydrator.
 * `DEHYDRATOR.TEST`  - a set of unit tests of the above commands.
 
 ### time complexity
@@ -59,7 +64,6 @@ The dehydrator is an effective 'snooze button' for events, you push an event int
 * `DEHYDRATOR.PULL`  - O(N) where N is the number of dehydrating elements with the same TTL.
 * `DEHYDRATOR.POLL`  - O(N) where N is the number of expired elements, please notice we regard # of different TTLs << # of dehydrated elements in the system.
 * `DEHYDRATOR.LOOK`  - O(1)
-* `DEHYDRATOR.CLEAR` - O(N) where N is the total number of dehydrating elements.
 * `DEHYDRATOR.TEST`  - Fixed time (~11 seconds) - this function uses `sleep` (dios mio, No! &#x271e;&#x271e;&#x271e;).
 
 ### Quick Start Guide
@@ -73,35 +77,36 @@ Here's what you need to do to build this module:
 Now run `redis-cli` and try the commands:
 
 ```
-127.0.0.1:9979> DEHYDRATOR.CLEAR
+127.0.0.1:9979> DEHYDRATOR.PUSH some_dehy id1 world 15
 OK
-127.0.0.1:9979> DEHYDRATOR.PUSH id1 world 15
+127.0.0.1:9979> DEHYDRATOR.PUSH some_dehy id2 hello 1
 OK
-127.0.0.1:9979> DEHYDRATOR.PUSH id2 hello 1
+127.0.0.1:9979> DEHYDRATOR.PUSH some_dehy id3 goodbye 2
 OK
-127.0.0.1:9979> DEHYDRATOR.PUSH id3 goodbye 2
-OK
-127.0.0.1:9979> DEHYDRATOR.PULL id3
+127.0.0.1:9979> DEHYDRATOR.PULL some_dehy id3
 "goodbye"
-127.0.0.1:9979> DEHYDRATOR.POLL
+127.0.0.1:9979> DEHYDRATOR.POLL some_dehy
 1) "hello"
-127.0.0.1:9979> DEHYDRATOR.POLL
+127.0.0.1:9979> DEHYDRATOR.POLL some_dehy
 (empty list or set)
-127.0.0.1:6379> DEHYDRATOR.LOOK id1
-"hello"
-127.0.0.1:6379> DEHYDRATOR.LOOK id2
-(nil)
-127.0.0.1:6379> DEHYDRATOR.PULL id2
-(nil)
+127.0.0.1:6379> DEHYDRATOR.LOOK some_dehy id2
+ERROR: No Such Element
+127.0.0.1:6379> DEHYDRATOR.LOOK some_dehy id1
+"world"
+127.0.0.1:6379> DEHYDRATOR.PULL some_dehy id2
+ERROR: No Such Element
 ```
 
 This `(empty list or set)` reply from `DEHYDRATOR.POLL` means that the there are no more items to pull right now, so we'll have to wait until enough time passes for our next element to be ready (15 seconds in this case). Then we can run:
 
 ```
-127.0.0.1:9979> DEHYDRATOR.POLL
+127.0.0.1:9979> DEHYDRATOR.POLL some_dehy
 1) "world"
 127.0.0.1:9979> DEHYDRATOR.TEST
 PASS
+(11.00s)
+127.0.0.1:9979> DEL some_dehy
+OK
 ```
 
 Enjoy!
@@ -109,11 +114,9 @@ Enjoy!
 
 ## Future work
 
-* extend usage of Redis` low-level APIs
 * add UPDATE command
-* add pub/sub mechanism to POLL
-* add ability to have several different dehydrators (maybe as a new type)
 * "time to next element" command
+* add pub/sub mechanism to POLL
 * a whole lot more
 
 ## About This Module
