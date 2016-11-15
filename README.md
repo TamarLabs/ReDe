@@ -61,7 +61,7 @@ The dehydrator is an effective 'snooze button' for events, you push an event int
 ### time complexity
 
 * `DEHYDRATOR.PUSH`  - O(1)
-* `DEHYDRATOR.PULL`  - O(N) where N is the number of dehydrating elements with the same TTL.
+* `DEHYDRATOR.PULL`  - O(1)
 * `DEHYDRATOR.POLL`  - O(N) where N is the number of expired elements, please notice we regard # of different TTLs << # of dehydrated elements in the system.
 * `DEHYDRATOR.LOOK`  - O(1)
 * `DEHYDRATOR.TEST`  - Fixed time (~11 seconds) - this function uses `sleep` (dios mio, No! &#x271e;&#x271e;&#x271e;).
