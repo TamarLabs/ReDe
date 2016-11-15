@@ -591,7 +591,6 @@ int PrintCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     {
       return RedisModule_WrongArity(ctx);
     }
-    //RedisModule_AutoMemory(ctx);
 
     // get key dehydrator_name
     RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ);
@@ -615,7 +614,6 @@ int LookCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     {
       return RedisModule_WrongArity(ctx);
     }
-    // RedisModule_AutoMemory(ctx);
     RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ);
     Dehydrator * dehydrator = validateDehydratorKey(ctx, key, NULL);
     if (dehydrator == NULL)
@@ -651,7 +649,6 @@ int PushCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
       return RedisModule_WrongArity(ctx);
     }
 
-    //RedisModule_AutoMemory(ctx);
     RedisModuleString* dehydrator_name = argv[1];
     RedisModuleString * element_id = argv[2];
     RedisModuleString * element = argv[3];
@@ -727,7 +724,6 @@ int PullCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     {
       return RedisModule_WrongArity(ctx);
     }
-    //RedisModule_AutoMemory(ctx);
 
     // get key dehydrator_name
     RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1],
@@ -776,7 +772,6 @@ int PollCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
       return RedisModule_WrongArity(ctx);
     }
 
-    // RedisModule_AutoMemory(ctx);
     // get key for dehydrator
     RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1],
         REDISMODULE_READ|REDISMODULE_WRITE);
@@ -803,7 +798,7 @@ int PollCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
             {
                 ElementListNode* node = _listPop(list);
                 _removeNodeFromMapping(dehydrator, node);
-                RedisModule_ReplyWithString(ctx, node->element); // append head->element to output
+                RedisModule_ReplyWithString(ctx, node->element); // append node->element to output
                 ++expired_element_num;
             }
             else
@@ -1076,7 +1071,6 @@ int TestPoll(RedisModuleCtx *ctx)
 // Unit test entry point for the module
 int TestModule(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 {
-    //RedisModule_AutoMemory(ctx);
 
     RMUtil_Test(TestLook);
     RMUtil_Test(TestPush);
