@@ -371,29 +371,6 @@ void deleteDehydrator(Dehydrator* dehydrator)
 }
 
 
-RedisModuleString* pull(Dehydrator* dehydrator, RedisModuleString* element_id, ElementList* timeout_queue)
-{
-	ElementListNode* node = NULL;
-	khiter_t k = kh_get(32, dehydrator->element_nodes, RedisModule_StringPtrLen(element_id, NULL));  // first have to get iterator
-	if (k != kh_end(dehydrator->element_nodes)) // k will be equal to kh_end if key not present
-	{
-		node = kh_val(dehydrator->element_nodes, k);
-	}
-
-	if (node == NULL) { return NULL; } // no such element in the system
-
-    RedisModuleString* element = node->element; // extract element
-
-    // delete element_nodes[element_id]
-    kh_del(32, dehydrator->element_nodes, k);
-
-    // free everything else related to the node but not the element
-    RedisModule_Free(node->element_id);
-    RedisModule_Free(node);
-
-    return element;
-}
-
 ElementListNode* _getNodeForID(Dehydrator* dehydrator, RedisModuleString* element_id)
 {
         // now we know we have a dehydrator get element node from element_nodes
@@ -607,6 +584,8 @@ int PrintCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     {
       return RedisModule_WrongArity(ctx);
     }
+    //RedisModule_AutoMemory(ctx);
+
     // get key dehydrator_name
     RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ);
     Dehydrator* dehydrator = validateDehydratorKey(ctx, key, NULL);
@@ -662,8 +641,8 @@ int PushCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     {
       return RedisModule_WrongArity(ctx);
     }
-    // RedisModule_AutoMemory(ctx);
 
+    //RedisModule_AutoMemory(ctx);
     RedisModuleString* dehydrator_name = argv[1];
     RedisModuleString * element_id = argv[2];
     RedisModuleString * element = argv[3];
@@ -735,7 +714,7 @@ int PullCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     {
       return RedisModule_WrongArity(ctx);
     }
-    RedisModule_AutoMemory(ctx);
+    //RedisModule_AutoMemory(ctx);
 
     // get key dehydrator_name
     RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1],
@@ -779,7 +758,7 @@ int PollCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
       return RedisModule_WrongArity(ctx);
     }
 
-    RedisModule_AutoMemory(ctx);
+    // RedisModule_AutoMemory(ctx);
     // get key for dehydrator
     RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1],
         REDISMODULE_READ|REDISMODULE_WRITE);
@@ -856,6 +835,41 @@ int TestLook(RedisModuleCtx *ctx)
     // RMUtil_Assert(RedisModule_CreateStringFromCallReply(check3) == NULL);
 
     RedisModule_Call(ctx, "DEL", "c", "TEST_DEHYDRATOR_look");
+    printf("Passed.\n");
+    return REDISMODULE_OK;
+}
+
+
+int TestTimeToNext(RedisModuleCtx *ctx)
+{
+    RedisModule_Call(ctx, "DEL", "c", "TEST_DEHYDRATOR_ttn");
+    printf("Testing TTN - ");
+
+    RedisModuleCallReply *push1 =
+        RedisModule_Call(ctx, "dehydrator.push", "cccc", "TEST_DEHYDRATOR_ttn", "ttn_test_element", "payload", "3");
+    RMUtil_Assert(RedisModule_CallReplyType(push1) != REDISMODULE_REPLY_ERROR);
+
+    RedisModuleCallReply *check1 =
+        RedisModule_Call(ctx, "dehydrator.ttn", "c", "TEST_DEHYDRATOR_ttn");
+    RMUtil_Assert(RedisModule_CallReplyType(check1) != REDISMODULE_REPLY_ERROR);
+    RMUtil_Assert(RedisModule_CallReplyInteger(check1) == 3);
+
+    sleep(2);
+
+    RedisModuleCallReply *check2 =
+        RedisModule_Call(ctx, "dehydrator.ttn", "c", "TEST_DEHYDRATOR_ttn");
+    RMUtil_Assert(RedisModule_CallReplyType(check2) != REDISMODULE_REPLY_ERROR);
+    RMUtil_Assert(RedisModule_CallReplyInteger(check2) == 1);
+
+    sleep(2);
+
+    RedisModuleCallReply *check3 =
+        RedisModule_Call(ctx, "dehydrator.ttn", "c", "TEST_DEHYDRATOR_ttn");
+    RMUtil_Assert(RedisModule_CallReplyType(check3) != REDISMODULE_REPLY_ERROR);
+    RMUtil_Assert(RedisModule_CallReplyInteger(check3) == 0);
+
+
+    RedisModule_Call(ctx, "DEL", "c", "TEST_DEHYDRATOR_ttn");
     printf("Passed.\n");
     return REDISMODULE_OK;
 }
@@ -1042,12 +1056,13 @@ int TestPoll(RedisModuleCtx *ctx)
 // Unit test entry point for the module
 int TestModule(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 {
-    RedisModule_AutoMemory(ctx);
+    //RedisModule_AutoMemory(ctx);
 
     RMUtil_Test(TestLook);
     RMUtil_Test(TestPush);
     RMUtil_Test(TestPull);
     RMUtil_Test(TestPoll);
+    RMUtil_Test(TestTimeToNext);
     printf("All Tests Passed Succesfully!\n");
 
     RedisModule_ReplyWithSimpleString(ctx, "PASS");
