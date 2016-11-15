@@ -99,9 +99,11 @@ ERROR: No Such Element
 "world"
 127.0.0.1:6379> DEHYDRATOR.PULL some_dehy id2
 ERROR: No Such Element
+127.0.0.1:6379> DEHYDRATOR.TTN some_dehy
+8
 ```
 
-This `(empty list or set)` reply from `DEHYDRATOR.POLL` means that the there are no more items to pull right now, so we'll have to wait until enough time passes for our next element to be ready (15 seconds in this case). Then we can run:
+This `(empty list or set)` reply from `DEHYDRATOR.POLL` means that the there are no more items to pull right now, so we'll have to wait until enough time passes for our next element to expire. using DEHYDRATOR.TTN we can see this will be in 8 seconds (in this example we waited a bit between commands). Once 8 seconds will pass we can run:
 
 ```
 127.0.0.1:9979> DEHYDRATOR.POLL some_dehy
