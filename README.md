@@ -50,20 +50,24 @@ The dehydrator is an effective 'snooze button' for events, you push an event int
 
 **It includes 4 main commands:**
 
-* `DEHYDRATOR.PUSH` - push an element, it will need an id, the element itself and dehydration time in seconds.
-* `DEHYDRATOR.PULL` - pull the element with the appropriate id before it expires.
-* `DEHYDRATOR.POLL` - efficiently return all the expired elements.
-* `DEHYDRATOR.LOOK` - search the dehydrator for an element with the given id and if found return it's payload (without pulling).
+* `DEHYDRATOR.PUSH` - Push an element, it will need an id, the element itself and dehydration time in seconds.
+* `DEHYDRATOR.PULL` - Pull the element with the appropriate id before it expires.
+* `DEHYDRATOR.POLL` - Pull and return all the expired elements.
+* `DEHYDRATOR.LOOK` - Search the dehydrator for an element with the given id and if found return it's payload (without pulling).
+* `DEHYDRATOR.UPDATE` - Set the element represented by a given id, the current element will be returned, and the new element will inherit the current expiration.
+* `DEHYDRATOR.TTN` - Return the minimal time between now and the first expiration.
 
-**The module also includes 2 assistive commands:**
+**The module also includes a test command:**
 * `DEHYDRATOR.TEST`  - a set of unit tests of the above commands.
 
 ### time complexity
 
 * `DEHYDRATOR.PUSH`  - O(1)
 * `DEHYDRATOR.PULL`  - O(1)
-* `DEHYDRATOR.POLL`  - O(N) where N is the number of expired elements, please notice we regard # of different TTLs << # of dehydrated elements in the system.
+* `DEHYDRATOR.POLL`  - O(max{N.M}) where N is the number of expired elements and M is the number of different TTLs elements were pushed with.
 * `DEHYDRATOR.LOOK`  - O(1)
+* `DEHYDRATOR.UPDATE` - O(1)
+* `DEHYDRATOR.TTN` - O(M) where M is the number of different TTLs elements were pushed with.
 * `DEHYDRATOR.TEST`  - Fixed time (~11 seconds) - this function uses `sleep` (dios mio, No! &#x271e;&#x271e;&#x271e;).
 
 ### Quick Start Guide
@@ -114,10 +118,9 @@ Enjoy!
 
 ## Future work
 
-* add UPDATE command
-* "time to next element" command
-* add pub/sub mechanism to POLL
-* a whole lot more
+* Additional, more thorough tests
+* add some sort of pub/sub mechanism to POLL
+* whatever you suggest
 
 ## About This Module
 

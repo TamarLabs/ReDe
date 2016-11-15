@@ -407,6 +407,14 @@ ElementListNode* _getNodeForID(Dehydrator* dehydrator, RedisModuleString* elemen
         return node;
 }
 
+void _removeNodeFromMapping(Dehydrator* dehydrator, ElementListNode* node)
+{
+    khiter_t k = kh_get(32, dehydrator->element_nodes, RedisModule_StringPtrLen(node->element_id, NULL));  // first have to get iterator
+    if (k != kh_end(dehydrator->element_nodes)) // k will be equal to kh_end if key not present
+    {
+        kh_del(32, dehydrator->element_nodes, k);
+    }
+}
 
 //##########################################################
 //#
@@ -578,7 +586,8 @@ int TimeToNextCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
             int tmp = head->expiration - time(0);
             if (tmp <= 0)
             {
-                return 0;
+                time_to_next = 0;
+                break;
             }
             else if ((tmp < time_to_next) || (time_to_next < 0))
             {
@@ -588,7 +597,8 @@ int TimeToNextCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     }
 
     RedisModule_CloseKey(key);
-    return time_to_next;
+    RedisModule_ReplyWithLongLong(ctx, time_to_next);
+    return REDISMODULE_OK;
 }
 
 int PrintCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
@@ -743,12 +753,7 @@ int PullCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     }
 
     _listPull(dehydrator, node);
-
-    khiter_t k = kh_get(32, dehydrator->element_nodes, RedisModule_StringPtrLen(argv[2], NULL));  // first have to get iterator
-    if (k != kh_end(dehydrator->element_nodes)) // k will be equal to kh_end if key not present
-    {
-        kh_del(32, dehydrator->element_nodes, k);
-    }
+    _removeNodeFromMapping(dehydrator, node);
 
     if (node->element == NULL)
     {
@@ -796,6 +801,7 @@ int PollCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
             if ((head != NULL) && (head->expiration <= time(0)))
             {
                 ElementListNode* node = _listPop(list);
+                _removeNodeFromMapping(dehydrator, node);
                 RedisModule_ReplyWithString(ctx, node->element); // append head->element to output
                 ++expired_element_num;
             }
@@ -1066,8 +1072,11 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx)
     );
     if (DehydratorType == NULL) return REDISMODULE_ERR;
 
-    // register DEL - using the shortened utility registration macro
-    RMUtil_RegisterWriteCmd(ctx, "dehydrator.print", PrintCommand);
+    // register TimeToNextCommand - using the shortened utility registration macro
+    RMUtil_RegisterWriteCmd(ctx, "dehydrator.ttn", TimeToNextCommand);
+
+    // register dehydrator.update - using the shortened utility registration macro
+    RMUtil_RegisterWriteCmd(ctx, "dehydrator.update", UpdateCommand);
 
     // register dehydrator.push - using the shortened utility registration macro
     RMUtil_RegisterWriteCmd(ctx, "dehydrator.push", PushCommand);
@@ -1086,6 +1095,10 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx)
 
     // register the unit test
     RMUtil_RegisterWriteCmd(ctx, "dehydrator.test", TestModule);
+
+    // register dehydrator.print - using the shortened utility registration macro
+    RMUtil_RegisterWriteCmd(ctx, "dehydrator.print", PrintCommand);
+
 
     return REDISMODULE_OK;
 }
