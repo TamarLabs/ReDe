@@ -13,10 +13,7 @@ def helloworld(redis_service):
     redis_service.execute_command("dehydrator.pull", "helloworld_dehydrator", "y")
 
     # and make sure that it's gone
-    try:
-        redis_service.execute_command("dehydrator.look", "helloworld_dehydrator", "y")
-    except redis.exceptions.ResponseError:
-        pass # caught "ERROR: No Such Element", as expected
+    assert( not redis_service.execute_command("dehydrator.look", "helloworld_dehydrator", "y"))
 
     # or still there
     if redis_service.execute_command("dehydrator.look", "helloworld_dehydrator", "z") != "hello":

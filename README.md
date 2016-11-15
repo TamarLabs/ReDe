@@ -94,11 +94,11 @@ OK
 127.0.0.1:9979> DEHYDRATOR.POLL some_dehy
 (empty list or set)
 127.0.0.1:6379> DEHYDRATOR.LOOK some_dehy id2
-ERROR: No Such Element
+(nil)
 127.0.0.1:6379> DEHYDRATOR.LOOK some_dehy id1
 "world"
 127.0.0.1:6379> DEHYDRATOR.PULL some_dehy id2
-ERROR: No Such Element
+(nil)
 127.0.0.1:6379> DEHYDRATOR.TTN some_dehy
 8
 ```
