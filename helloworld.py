@@ -18,8 +18,7 @@ def helloworld(redis_service):
     except redis.exceptions.ResponseError:
         pass # caught "ERROR: No Such Element", as expected
 
-
-    # or not
+    # or still there
     assert(redis_service.execute_command("dehydrator.look", "helloworld_dehydrator", "x"))
 
     # poll at different times to get only the data that is done dehydrating
