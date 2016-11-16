@@ -54,15 +54,15 @@ The dehydrator is an effective 'snooze button' for events, you push an event int
 
 **It includes 4 main commands:**
 
-* `DEHYDRATOR.PUSH` - Push an element, it will need an id, the element itself and dehydration time in seconds.
-* `DEHYDRATOR.PULL` - Pull the element with the appropriate id before it expires.
-* `DEHYDRATOR.POLL` - Pull and return all the expired elements.
-* `DEHYDRATOR.LOOK` - Search the dehydrator for an element with the given id and if found return it's payload (without pulling).
-* `DEHYDRATOR.UPDATE` - Set the element represented by a given id, the current element will be returned, and the new element will inherit the current expiration.
-* `DEHYDRATOR.TTN` - Return the minimal time between now and the first expiration - Fixed time (~11 seconds) - this function uses `sleep` (dios mio, No! &#x271e;&#x271e;&#x271e;).
+* [`DEHYDRATOR.PUSH`](Commands.md/#push) - Push an element, it will need an id, the element itself and dehydration time in seconds. 
+* [`DEHYDRATOR.PULL`](Commands.md/#pull) - Pull the element with the appropriate id before it expires.
+* [`DEHYDRATOR.POLL`](Commands.md/#poll) - Pull and return all the expired elements.
+* [`DEHYDRATOR.LOOK`](Commands.md/#look) - Search the dehydrator for an element with the given id and if found return it's payload (without pulling).
+* [`DEHYDRATOR.UPDATE`](Commands.md/#update) - Set the element represented by a given id, the current element will be returned, and the new element will inherit the current expiration.
+* [`DEHYDRATOR.TTN`](Commands.md/#ttn) - Return the minimal time between now and the first expiration
 
 **The module also includes a test command:**
-* `DEHYDRATOR.TEST`  - a set of unit tests of the above commands.
+* `DEHYDRATOR.TEST`  - a set of unit tests of the above commands. **NOTE!** This command is running in fixed time (~15 seconds) as it uses `sleep` (dios mio, No! &#x271e;&#x271e;&#x271e;).
 
 *see more about the commands in [Commands.md](Commands.md)*
 
