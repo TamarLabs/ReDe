@@ -1,6 +1,6 @@
 # ReDe Provided Commands
 
-## Push ##
+## PUSH ##
 
 *syntex:* **PUSH** dehydrator_name element_id element ttl
 
@@ -40,7 +40,7 @@ redis> DEHYDRATOR.POLL my_dehydrator
 
 *Time Complexity: O(1)*
 
-Pull the element corrisponding with `element_id` and remove it from the dehydrator before it expires.
+Pull the element corresponding with `element_id` and remove it from the dehydrator before it expires.
 
 ***Return Value***
 
@@ -56,66 +56,127 @@ redis> DEHYDRATOR.PULL my_dehydrator 101
 (nil)
 ```
 
+## POLL ##
 
+*syntex:* **POLL** dehydrator_name
 
+*Available since: 0.1.0*
 
+*Time Complexity: O(max{N.M}) where N is the number of expired elements and M is the number of different TTLs elements were pushed with. *
 
-* `DEHYDRATOR.POLL` - Pull and return all the expired elements.
-* `DEHYDRATOR.LOOK` - Search the dehydrator for an element with the given id and if found return it's payload (without pulling).
-* `DEHYDRATOR.UPDATE` - Set the element represented by a given id, the current element will be returned, and the new element will inherit the current expiration.
-* `DEHYDRATOR.TTN` - Return the minimal time between now and the first expiration.
-* `DEHYDRATOR.TEST`  - a set of unit tests of the above commands.
+Pull and return all the expired elements in `dehydrator_name`.
 
-### time complexity
+***Return Value***
 
-* `DEHYDRATOR.PUSH`  - O(1)
-* `DEHYDRATOR.PULL`  - O(1)
-* `DEHYDRATOR.POLL`  - O(max{N.M}) where N is the number of expired elements and M is the number of different TTLs elements were pushed with.
-* `DEHYDRATOR.LOOK`  - O(1)
-* `DEHYDRATOR.UPDATE` - O(1)
-* `DEHYDRATOR.TTN` - O(M) where M is the number of different TTLs elements were pushed with.
-* `DEHYDRATOR.TEST`  - Fixed time (~11 seconds) - this function uses `sleep` (dios mio, No! &#x271e;&#x271e;&#x271e;).
+List of all expired elements on success, or an empty list if no elements are expired, the key is empty or the key contains something other the a dehydrator.
 
-** usage example **
+Example
 ```
-127.0.0.1:9979> DEHYDRATOR.PUSH some_dehy id1 world 15
+redis> DEHYDRATOR.PUSH my_dehydrator 101 "Dehydrate this" 3
 OK
-127.0.0.1:9979> DEHYDRATOR.PUSH some_dehy id2 hello 1
+redis> DEHYDRATOR.PUSH my_dehydrator 102 "Dehydrate that" 1
 OK
-127.0.0.1:9979> DEHYDRATOR.PUSH some_dehy id3 goodbye 2
-OK
-127.0.0.1:9979> DEHYDRATOR.PULL some_dehy id3
-"goodbye"
-127.0.0.1:9979> DEHYDRATOR.POLL some_dehy
-1) "hello"
-127.0.0.1:9979> DEHYDRATOR.POLL some_dehy
+redis> DEHYDRATOR.POLL my_dehydrator
 (empty list or set)
-127.0.0.1:6379> DEHYDRATOR.LOOK some_dehy id2
-(nil)
-127.0.0.1:6379> DEHYDRATOR.LOOK some_dehy id1
-"world"
-127.0.0.1:6379> DEHYDRATOR.PULL some_dehy id2
-(nil)
-127.0.0.1:6379> DEHYDRATOR.TTN some_dehy
-8
+```
+wait for 1 second
+```
+redis> DEHYDRATOR.POLL my_dehydrator
+("Dehydrate that")
+```
+wait additional 2 seconds
+```
+redis> DEHYDRATOR.POLL my_dehydrator
+("Dehydrate this")
 ```
 
-This `(empty list or set)` reply from `DEHYDRATOR.POLL` means that the there are no more items to pull right now, so we'll have to wait until enough time passes for our next element to expire. using DEHYDRATOR.TTN we can see this will be in 8 seconds (in this example we waited a bit between commands). Once 8 seconds will pass we can run:
 
+## LOOK ##
+
+*syntex:* **LOOK** dehydrator_name element_id
+
+*Available since: 0.1.0*
+
+*Time Complexity: O(1)*
+
+Show the element corresponding with `element_id` and without removing it from the dehydrator.
+
+***Return Value***
+
+The element represented by `element_id` on success, Null if key is empty or not a dehydrator, or element with `element_id` does not exist.
+
+Example
 ```
-127.0.0.1:9979> DEHYDRATOR.POLL some_dehy
-1) "world"
-127.0.0.1:9979> DEHYDRATOR.TEST
-PASS
-(15.00s)
-127.0.0.1:9979> DEL some_dehy
+redis> DEHYDRATOR.PUSH my_dehydrator 101 "Dehydrate this" 3
 OK
+redis> DEHYDRATOR.PUSH my_dehydrator 102 "Dehydrate that" 3
+OK
+redis> DEHYDRATOR.LOOK my_dehydrator 101
+"Dehydrate this"
+redis> DEHYDRATOR.LOOK my_dehydrator 102
+"Dehydrate that"
+redis> DEHYDRATOR.LOOK my_dehydrator 102
+(nil)
 ```
 
-Enjoy!
 
 
-## Future work
+## TTN ##
 
-* Additional, more thorough tests
+*syntex:* **TTN** dehydrator_name
 
+*Available since: 0.2.1*
+
+*Time Complexity: O(M) where M is the number of different TTLs elements were pushed with.
+
+Show the time left (in seconds) until the next element will expire.
+
+***Return Value***
+
+int representing the number of seconds until next element will expire. Null if `dehydrator_name` does not contain a dehydrator.
+
+Example
+```
+redis> DEHYDRATOR.PUSH my_dehydrator 101 "Dehydrate this" 3
+OK
+redis> DEHYDRATOR.PUSH my_dehydrator 102 "Dehydrate that" 1
+OK
+redis> DEHYDRATOR.TTN my_dehydrator
+1
+```
+wait for 1 second
+```
+redis> DEHYDRATOR.TTN my_dehydrator
+0
+redis> DEHYDRATOR.POLL my_dehydrator
+("Dehydrate that")
+redis> DEHYDRATOR.TTN my_dehydrator
+2
+```
+
+
+## UPDATE ##
+
+*syntex:* **UPDATE** dehydrator_name element_id new_element
+
+*Available since: 0.1.0*
+
+*Time Complexity: O(1)*
+
+Change the element corresponding with `element_id` with `new_element` and return the original.
+
+***Return Value***
+
+The element that *was* represented by `element_id` on success, Error if key is empty or not a dehydrator, or if element with `element_id` does not exist.
+
+Note: the expiration time of `new_element` will not be the same as the original element.
+
+Example
+```
+redis> DEHYDRATOR.PUSH my_dehydrator 101 "Dehydrate this" 3
+OK
+redis> DEHYDRATOR.UPDATE my_dehydrator 101 "Dehydrate that"
+"Dehydrate this"
+redis> DEHYDRATOR.LOOK my_dehydrator 101
+"Dehydrate that"
+```

@@ -778,7 +778,7 @@ int PollCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     Dehydrator* dehydrator = validateDehydratorKey(ctx, key, NULL);
     if (dehydrator == NULL)
     {
-        RedisModule_ReplyWithNull(ctx);
+        RedisModule_ReplyWithArray(ctx, 0);
         return REDISMODULE_OK;
     }
 
