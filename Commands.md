@@ -159,7 +159,7 @@ redis> DEHYDRATOR.TTN my_dehydrator
 
 *syntex:* **UPDATE** dehydrator_name element_id new_element
 
-*Available since: 0.1.0*
+*Available since: 0.2.1*
 
 *Time Complexity: O(1)*
 
