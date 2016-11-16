@@ -55,20 +55,12 @@ The dehydrator is an effective 'snooze button' for events, you push an event int
 * `DEHYDRATOR.POLL` - Pull and return all the expired elements.
 * `DEHYDRATOR.LOOK` - Search the dehydrator for an element with the given id and if found return it's payload (without pulling).
 * `DEHYDRATOR.UPDATE` - Set the element represented by a given id, the current element will be returned, and the new element will inherit the current expiration.
-* `DEHYDRATOR.TTN` - Return the minimal time between now and the first expiration.
+* `DEHYDRATOR.TTN` - Return the minimal time between now and the first expiration - Fixed time (~11 seconds) - this function uses `sleep` (dios mio, No! &#x271e;&#x271e;&#x271e;).
 
 **The module also includes a test command:**
 * `DEHYDRATOR.TEST`  - a set of unit tests of the above commands.
 
-### time complexity
-
-* `DEHYDRATOR.PUSH`  - O(1)
-* `DEHYDRATOR.PULL`  - O(1)
-* `DEHYDRATOR.POLL`  - O(max{N.M}) where N is the number of expired elements and M is the number of different TTLs elements were pushed with.
-* `DEHYDRATOR.LOOK`  - O(1)
-* `DEHYDRATOR.UPDATE` - O(1)
-* `DEHYDRATOR.TTN` - O(M) where M is the number of different TTLs elements were pushed with.
-* `DEHYDRATOR.TEST`  - Fixed time (~11 seconds) - this function uses `sleep` (dios mio, No! &#x271e;&#x271e;&#x271e;).
+*see more about the commands in [Commands.md](Commands.md)*
 
 ### Quick Start Guide
 
