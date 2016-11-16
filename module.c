@@ -666,7 +666,7 @@ int PushCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     Dehydrator* dehydrator = validateDehydratorKey(ctx, key, dehydrator_name);
     if (dehydrator == NULL)
     {
-        RedisModule_ReplyWithError(ctx, "ERROR: No Such dehydrator.");
+        RedisModule_ReplyWithError(ctx, "ERROR: Not a dehydrator.");
         return REDISMODULE_ERR;
     }
 
