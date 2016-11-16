@@ -1,5 +1,21 @@
 # ReDe Provided Commands
 
+### Available commands
+
+1. [`DEHYDRATOR.PUSH`](#push)
+2. [`DEHYDRATOR.PULL`](#pull)
+3. [`DEHYDRATOR.POLL`](#poll)
+4. [`DEHYDRATOR.LOOK`](#look)
+5. [`DEHYDRATOR.TTN`](#ttn)
+6. [`DEHYDRATOR.UPDATE`](#update)
+
+### Performance of commands (in events/second) by version
+| Command       | 0.1.0 | 0.2.0   |
+| ------------- |:-----:|:-------:|
+| **PUSH**      |       |         |
+| **PULL**      |       |         |
+| **POLL**      | 1,700 | 300,000 |
+
 ## PUSH ##
 
 *syntex:* **PUSH** dehydrator_name element_id element ttl
