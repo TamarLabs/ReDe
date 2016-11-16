@@ -10,7 +10,7 @@
 
 Push an `element` into the dehydrator for `ttl` seconds, marking it with `element_id`
 
-Note: the key shouldn’t be repeated for the executed command.
+Note: if the key does not exist this command will create a Dehydrator on it.
 
 ***Return Value***
 
@@ -34,9 +34,32 @@ redis> DEHYDRATOR.POLL my_dehydrator
 
 ## PULL ##
 
+*syntex:* **PULL** dehydrator_name element_id
+
+*Available since: 0.1.0*
+
+*Time Complexity: O(1)*
+
+Pull the element corrisponding with `element_id` and remove it from the dehydrator before it expires.
+
+***Return Value***
+
+The element represented by `element_id` on success, Null if key is empty or not a dehydrator, or element with `element_id` does not exist.
+
+Example
+```
+redis> DEHYDRATOR.PUSH my_dehydrator 101 "Dehydrate this" 3
+OK
+redis> DEHYDRATOR.PULL my_dehydrator 101
+"Dehydrate this"
+redis> DEHYDRATOR.PULL my_dehydrator 101
+(nil)
+```
 
 
-* `DEHYDRATOR.PULL` - Pull the element with the appropriate id before it expires.
+
+
+
 * `DEHYDRATOR.POLL` - Pull and return all the expired elements.
 * `DEHYDRATOR.LOOK` - Search the dehydrator for an element with the given id and if found return it's payload (without pulling).
 * `DEHYDRATOR.UPDATE` - Set the element represented by a given id, the current element will be returned, and the new element will inherit the current expiration.
