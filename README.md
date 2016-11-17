@@ -106,7 +106,7 @@ OK
 8
 ```
 
-This `(empty list or set)` reply from `REDE.POLL` means that the there are no more items to pull right now, so we'll have to wait until enough time passes for our next element to expire. using REDE.TTN we can see this will be in 8 seconds (in this example we waited a bit between commands). Once 8 seconds will pass we can run:
+This `(empty list or set)` reply from `REDE.POLL` means that the there are no more items to pull right now, so we'll have to wait until enough time passes for our next element to expire. using `REDE.TTN` we can see this will be in 8 seconds (in this example we waited a bit between commands). Once 8 seconds will pass we can run:
 
 ```
 127.0.0.1:9979> REDE.POLL some_dehy
