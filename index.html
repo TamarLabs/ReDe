@@ -40,63 +40,21 @@
 
 <p><img src="redehy-basics.gif" alt="a gif that shows basic usage"></p>
 
-<h2>
-<a id="common-use-cases" class="anchor" href="#common-use-cases" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Common Use Cases</h2>
+<h3>
+<a id="common-use-cases" class="anchor" href="#common-use-cases" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Common Use Cases</h3>
 
-<pre><code>* **Stream Coordination** -  Make data from one stream wait for the corresponding data from another (preferebly using sliding-window style timing).
-* **Event Rate Limitation** - Delay any event beyond current max throughput to the next available time slot, while preserving order.
-* **Self Cleaning Claims-Check** - Store data for a well known period, without the need to search for it when it is expired or clear it from the data-store yourself.
-* **Task Timer** - Assign actions and their respective payloads to a specific point in time.
-</code></pre>
+<ul>
+<li>
+<strong>Stream Coordination</strong> -  Make data from one stream wait for the corresponding data from another (preferebly using sliding-window style timing).</li>
+<li>
+<strong>Event Rate Limitation</strong> - Delay any event beyond current max throughput to the next available time slot, while preserving order.</li>
+<li>
+<strong>Self Cleaning Claims-Check</strong> - Store data for a well known period, without the need to search for it when it is expired or clear it from the data-store yourself.</li>
+<li>
+<strong>Task Timer</strong> - Assign actions and their respective payloads to a specific point in time.</li>
+</ul>
 
 <hr>
-
-<h2>
-<a id="what-this-repo-includes" class="anchor" href="#what-this-repo-includes" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>What this repo includes:</h2>
-
-<h3>
-<a id="1-dehydration-module-source-code" class="anchor" href="#1-dehydration-module-source-code" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>1. Dehydration module source code</h3>
-
-<p><a href="module.c">module.c</a> - Build it, read it, love it, extend it (PRs are welcome)!</p>
-
-<h3>
-<a id="2-usage-example-files-and-load-tests" class="anchor" href="#2-usage-example-files-and-load-tests" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>2. usage example files and load tests</h3>
-
-<p>In this repository there are two python files that exemplify the usage of the module:</p>
-
-<ul>
-<li>
-<a href="helloworld.py">helloworld.py</a> - very simple usage example of all the functions exposed by the module</li>
-<li>
-<a href="test.py">test.py</a> - run internal as well as external functional tests, load test and print it all to stdout.</li>
-</ul>
-
-<h3>
-<a id="3-klib-khash" class="anchor" href="#3-klib-khash" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>3. klib <a href="khash.h">khash</a>
-</h3>
-
-<p>A set of macros to create the hash maps used to implement the dehydrator type.</p>
-
-<h3>
-<a id="4-librmutil" class="anchor" href="#4-librmutil" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>4. LibRMUtil</h3>
-
-<p>From <a href="https://github.com/RedisLabs/RedisModulesSDK">Redis Modules SDK</a> README:</p>
-
-<p>A small library of utility functions and macros for module developers, including:</p>
-
-<ul>
-<li>Easier argument parsing for your commands.</li>
-<li>Testing utilities that allow you to wrap your module's tests as a redis command.</li>
-<li>
-<code>RedisModuleString</code> utility functions (formatting, comparison, etc)</li>
-<li>The entire <code>sds</code> string library, lifted from Redis itself.</li>
-<li>A generic scalable Vector library. Not redis specific but we found it useful.</li>
-<li>A few other helpful macros and functions.</li>
-<li>
-<code>alloc.h</code>, an include file that allows modules implementing data types to implicitly replace the <code>malloc()</code> function family with the Redis special allocation wrappers.</li>
-</ul>
-
-<p>It can be found under the <code>rmutil</code> folder, and compiles into a static library you link your module against.    </p>
 
 <h2>
 <a id="usage" class="anchor" href="#usage" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Usage</h2>
@@ -129,8 +87,8 @@
 
 <p><em>see more about the commands in <a href="Commands.md">Commands.md</a></em></p>
 
-<h3>
-<a id="quick-start-guide" class="anchor" href="#quick-start-guide" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Quick Start Guide</h3>
+<h2>
+<a id="quick-start-guide" class="anchor" href="#quick-start-guide" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Quick Start Guide</h2>
 
 <p>Here's what you need to do to build this module:</p>
 
@@ -178,15 +136,6 @@ OK
 </code></pre>
 
 <p>Enjoy!</p>
-
-<h2>
-<a id="future-work" class="anchor" href="#future-work" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Future work</h2>
-
-<ul>
-<li>Additional, more thorough tests</li>
-<li>add some sort of pub/sub mechanism to POLL</li>
-<li>whatever you suggest</li>
-</ul>
 
 <h2>
 <a id="about-this-module" class="anchor" href="#about-this-module" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>About This Module</h2>
