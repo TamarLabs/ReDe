@@ -1,6 +1,6 @@
 # ReDe Provided Commands
 
-### Available commands
+### Commands described in this document
 
 1. [`DEHYDRATOR.PUSH`](#push)
 2. [`DEHYDRATOR.PULL`](#pull)
@@ -9,12 +9,13 @@
 5. [`DEHYDRATOR.TTN`](#ttn)
 6. [`DEHYDRATOR.UPDATE`](#update)
 
-### Performance of commands (in events/second) by version
-| Command       | 0.1.0 | 0.2.0   |
-| ------------- |:-----:|:-------:|
-| **PUSH**      |       |         |
-| **PULL**      |       |         |
-| **POLL**      | 1,700 | 300,000 |
+### Performance of commands in events/second by version
+| Command       | 0.1.0  |  0.2.*  | 0.3.0   |
+| ------------- |:------:|:-------:|:-------:|
+| **PUSH**      | 16,000 |  23,000 |         |
+| **PULL**      | 19,500 |  31,000 |         |
+| **POLL**      |  1,700 | 265,000 | 300,000 |
+
 
 ## PUSH ##
 

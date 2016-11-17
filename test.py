@@ -40,7 +40,7 @@ def function_test_dehydrator(redis_service):
     print("PASS")
     redis_service.execute_command("DEL", "python_test_dehydrator")
 
-def load_test_dehydrator(redis_service, cycles=100000, timeouts=[1,2,4,16,32,100,200,1000]):
+def load_test_dehydrator(redis_service, cycles=1000000, timeouts=[1,2,4,16,32,100,200,1000]):
     redis_service.execute_command("DEL", "python_load_test_dehydrator")
     print "starting load tests"
 
@@ -82,6 +82,30 @@ def load_test_dehydrator(redis_service, cycles=100000, timeouts=[1,2,4,16,32,100
 
 if __name__ == "__main__":
     r = redis.StrictRedis(host='localhost', port=6379, db=0)
-    run_internal_test(r)
-    function_test_dehydrator(r)
-    load_test_dehydrator(r)
+    args = sys.argv[1:]
+    test_internal = False
+    test_external = False
+    load_test = False
+    if not args:
+        test_internal = True
+        test_external = True
+        load_test = True
+    else:
+        for arg in args:
+            if arg == "--load":
+                load_test = True
+            if arg == "--noload":
+                load_test = False
+                test_internal = True
+                test_external = True
+            elif arg == "--internal":
+                test_internal = True
+            elif arg == "--external":
+                test_external = True
+    
+    if test_internal:
+        run_internal_test(r)
+    if test_external:
+        function_test_dehydrator(r)
+    if load_test:
+        load_test_dehydrator(r)
