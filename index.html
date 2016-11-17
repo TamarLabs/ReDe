@@ -123,7 +123,7 @@ OK
 8
 </code></pre>
 
-<p>This <code>(empty list or set)</code> reply from <code>REDE.POLL</code> means that the there are no more items to pull right now, so we'll have to wait until enough time passes for our next element to expire. using REDE.TTN we can see this will be in 8 seconds (in this example we waited a bit between commands). Once 8 seconds will pass we can run:</p>
+<p>This <code>(empty list or set)</code> reply from <code>REDE.POLL</code> means that the there are no more items to pull right now, so we'll have to wait until enough time passes for our next element to expire. using <code>REDE.TTN</code> we can see this will be in 8 seconds (in this example we waited a bit between commands). Once 8 seconds will pass we can run:</p>
 
 <pre><code>127.0.0.1:9979&gt; REDE.POLL some_dehy
 1) "world"
