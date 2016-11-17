@@ -825,28 +825,28 @@ int TestLook(RedisModuleCtx *ctx)
 
     // size_t len
     RedisModuleCallReply *check1 =
-        RedisModule_Call(ctx, "dehydrator.look", "cc", "TEST_DEHYDRATOR_look", "test_element");
+        RedisModule_Call(ctx, "REDE.look", "cc", "TEST_DEHYDRATOR_look", "test_element");
     RMUtil_Assert(!RedisModule_CreateStringFromCallReply(check1));
     // check if X is dehydtaring (should be false)
     // RMUtil_Assert(RedisModule_CreateStringFromCallReply(check1) == NULL);
 
 
     RedisModuleCallReply *push1 =
-        RedisModule_Call(ctx, "dehydrator.push", "cccc", "TEST_DEHYDRATOR_look", "test_element", "payload", "100");
+        RedisModule_Call(ctx, "REDE.push", "cccc", "TEST_DEHYDRATOR_look", "test_element", "payload", "100");
     RMUtil_Assert(RedisModule_CallReplyType(push1) != REDISMODULE_REPLY_ERROR);
 
     RedisModuleCallReply *check2 =
-        RedisModule_Call(ctx, "dehydrator.look", "cc", "TEST_DEHYDRATOR_look", "test_element");
+        RedisModule_Call(ctx, "REDE.look", "cc", "TEST_DEHYDRATOR_look", "test_element");
     RMUtil_Assert(RedisModule_CallReplyType(check2) != REDISMODULE_REPLY_ERROR);
     RMUtil_Assert(RedisModule_CreateStringFromCallReply(check2) != NULL); //TODO: == "payload"
 
 
     RedisModuleCallReply *pull1 =
-        RedisModule_Call(ctx, "dehydrator.pull", "cc", "TEST_DEHYDRATOR_look", "test_element");
+        RedisModule_Call(ctx, "REDE.pull", "cc", "TEST_DEHYDRATOR_look", "test_element");
     RMUtil_Assert(RedisModule_CallReplyType(pull1) != REDISMODULE_REPLY_ERROR);
 
     RedisModuleCallReply *check3 =
-        RedisModule_Call(ctx, "dehydrator.look", "cc", "TEST_DEHYDRATOR_look", "test_element");
+        RedisModule_Call(ctx, "REDE.look", "cc", "TEST_DEHYDRATOR_look", "test_element");
     RMUtil_Assert(!RedisModule_CreateStringFromCallReply(check3));
 
     RedisModule_Call(ctx, "DEL", "c", "TEST_DEHYDRATOR_look");
@@ -861,25 +861,25 @@ int TestTimeToNext(RedisModuleCtx *ctx)
     printf("Testing TTN - ");
 
     RedisModuleCallReply *push1 =
-        RedisModule_Call(ctx, "dehydrator.push", "cccc", "TEST_DEHYDRATOR_ttn", "ttn_test_element", "payload", "3");
+        RedisModule_Call(ctx, "REDE.push", "cccc", "TEST_DEHYDRATOR_ttn", "ttn_test_element", "payload", "3");
     RMUtil_Assert(RedisModule_CallReplyType(push1) != REDISMODULE_REPLY_ERROR);
 
     RedisModuleCallReply *check1 =
-        RedisModule_Call(ctx, "dehydrator.ttn", "c", "TEST_DEHYDRATOR_ttn");
+        RedisModule_Call(ctx, "REDE.ttn", "c", "TEST_DEHYDRATOR_ttn");
     RMUtil_Assert(RedisModule_CallReplyType(check1) != REDISMODULE_REPLY_ERROR);
     RMUtil_Assert(RedisModule_CallReplyInteger(check1) == 3);
 
     sleep(2);
 
     RedisModuleCallReply *check2 =
-        RedisModule_Call(ctx, "dehydrator.ttn", "c", "TEST_DEHYDRATOR_ttn");
+        RedisModule_Call(ctx, "REDE.ttn", "c", "TEST_DEHYDRATOR_ttn");
     RMUtil_Assert(RedisModule_CallReplyType(check2) != REDISMODULE_REPLY_ERROR);
     RMUtil_Assert(RedisModule_CallReplyInteger(check2) == 1);
 
     sleep(2);
 
     RedisModuleCallReply *check3 =
-        RedisModule_Call(ctx, "dehydrator.ttn", "c", "TEST_DEHYDRATOR_ttn");
+        RedisModule_Call(ctx, "REDE.ttn", "c", "TEST_DEHYDRATOR_ttn");
     RMUtil_Assert(RedisModule_CallReplyType(check3) != REDISMODULE_REPLY_ERROR);
     RMUtil_Assert(RedisModule_CallReplyInteger(check3) == 0);
 
@@ -897,17 +897,17 @@ int TestPush(RedisModuleCtx *ctx)
     // char * element_id = "push_test_element";
     // size_t len
     RedisModuleCallReply *check1 =
-        RedisModule_Call(ctx, "dehydrator.look", "cc", "TEST_DEHYDRATOR_push", "push_test_element");
+        RedisModule_Call(ctx, "REDE.look", "cc", "TEST_DEHYDRATOR_push", "push_test_element");
     RMUtil_Assert(!RedisModule_CreateStringFromCallReply(check1));
     // check if X is dehydtaring (should be false)
     // RMUtil_Assert(RedisModule_CreateStringFromCallReply(check1) == NULL);
 
     RedisModuleCallReply *push1 =
-        RedisModule_Call(ctx, "dehydrator.push", "cccc", "TEST_DEHYDRATOR_push", "push_test_element", "payload", "1");
+        RedisModule_Call(ctx, "REDE.push", "cccc", "TEST_DEHYDRATOR_push", "push_test_element", "payload", "1");
     RMUtil_Assert(RedisModule_CallReplyType(push1) != REDISMODULE_REPLY_ERROR);
 
     RedisModuleCallReply *check2 =
-        RedisModule_Call(ctx, "dehydrator.look", "cc", "TEST_DEHYDRATOR_push", "push_test_element");
+        RedisModule_Call(ctx, "REDE.look", "cc", "TEST_DEHYDRATOR_push", "push_test_element");
     RMUtil_Assert(RedisModule_CallReplyType(check2) != REDISMODULE_REPLY_ERROR);
     RMUtil_Assert(RedisModule_CreateStringFromCallReply(check2) != NULL); //TODO: == "payload"
 
@@ -929,35 +929,35 @@ int TestPull(RedisModuleCtx *ctx)
     char * bad_store_key = "pull_test_bad_element";
 
     RedisModuleCallReply *push1 =
-        RedisModule_Call(ctx, "dehydrator.push", "cccc", "TEST_DEHYDRATOR_pull", store_key, "payload", "100");
+        RedisModule_Call(ctx, "REDE.push", "cccc", "TEST_DEHYDRATOR_pull", store_key, "payload", "100");
     RMUtil_Assert(RedisModule_CallReplyType(push1) != REDISMODULE_REPLY_ERROR);
 
 
     RedisModuleCallReply *look1 =
-        RedisModule_Call(ctx, "dehydrator.look", "cc", "TEST_DEHYDRATOR_pull", store_key);
+        RedisModule_Call(ctx, "REDE.look", "cc", "TEST_DEHYDRATOR_pull", store_key);
     // RMUTIL_ASSERT_NOERROR(look1);
     RMUtil_Assert(RedisModule_CallReplyType(look1) != REDISMODULE_REPLY_ERROR);
     // RMUtil_Assert(RedisModule_CallReplyInteger(rep1) == 1);
 
 
     RedisModuleCallReply *pull1 =
-        RedisModule_Call(ctx, "dehydrator.pull", "cc", "TEST_DEHYDRATOR_pull", bad_store_key);
+        RedisModule_Call(ctx, "REDE.pull", "cc", "TEST_DEHYDRATOR_pull", bad_store_key);
     RMUtil_Assert(!RedisModule_CreateStringFromCallReply(pull1));
 
 
     RedisModuleCallReply *look2 =
-        RedisModule_Call(ctx, "dehydrator.look", "cc", "TEST_DEHYDRATOR_pull", bad_store_key);
+        RedisModule_Call(ctx, "REDE.look", "cc", "TEST_DEHYDRATOR_pull", bad_store_key);
     RMUtil_Assert(!RedisModule_CreateStringFromCallReply(look2));
     // RMUtil_Assert(RedisModule_CallReplyInteger(rep2) == 0);
 
 
     RedisModuleCallReply *pull2 =
-        RedisModule_Call(ctx, "dehydrator.pull", "cc", "TEST_DEHYDRATOR_pull", store_key);
+        RedisModule_Call(ctx, "REDE.pull", "cc", "TEST_DEHYDRATOR_pull", store_key);
     RMUtil_Assert(RedisModule_CallReplyType(pull2) != REDISMODULE_REPLY_ERROR);
 
 
     RedisModuleCallReply *look3 =
-        RedisModule_Call(ctx, "dehydrator.look", "cc", "TEST_DEHYDRATOR_pull", bad_store_key);
+        RedisModule_Call(ctx, "REDE.look", "cc", "TEST_DEHYDRATOR_pull", bad_store_key);
     RMUtil_Assert(!RedisModule_CreateStringFromCallReply(look3));
 
     printf("Passed.\n");
@@ -977,32 +977,32 @@ int TestPoll(RedisModuleCtx *ctx)
   // push elements 1, 4, 7 & 3a (for 1, 4, 7 & 3 seconds)
   // 1
   RedisModuleCallReply *push1 =
-      RedisModule_Call(ctx, "dehydrator.push", "cccc", "TEST_DEHYDRATOR_poll", "e1", "element_1", "1");
+      RedisModule_Call(ctx, "REDE.push", "cccc", "TEST_DEHYDRATOR_poll", "e1", "element_1", "1");
   RMUtil_Assert(RedisModule_CallReplyType(push1) != REDISMODULE_REPLY_ERROR);
 
   // 4
   RedisModuleCallReply *push4 =
-      RedisModule_Call(ctx, "dehydrator.push", "cccc", "TEST_DEHYDRATOR_poll", "e4", "element_4", "4");
+      RedisModule_Call(ctx, "REDE.push", "cccc", "TEST_DEHYDRATOR_poll", "e4", "element_4", "4");
   RMUtil_Assert(RedisModule_CallReplyType(push4) != REDISMODULE_REPLY_ERROR);
 
   // 7
   RedisModuleCallReply *push7 =
-      RedisModule_Call(ctx, "dehydrator.push", "cccc", "TEST_DEHYDRATOR_poll", "e7", "element_7", "7");
+      RedisModule_Call(ctx, "REDE.push", "cccc", "TEST_DEHYDRATOR_poll", "e7", "element_7", "7");
   RMUtil_Assert(RedisModule_CallReplyType(push7) != REDISMODULE_REPLY_ERROR);
 
   // 3a
   RedisModuleCallReply *push3a =
-      RedisModule_Call(ctx, "dehydrator.push", "cccc", "TEST_DEHYDRATOR_poll", "e3a", "element_3a", "3");
+      RedisModule_Call(ctx, "REDE.push", "cccc", "TEST_DEHYDRATOR_poll", "e3a", "element_3a", "3");
   RMUtil_Assert(RedisModule_CallReplyType(push3a) != REDISMODULE_REPLY_ERROR);
 
   // pull question 7
   RedisModuleCallReply *pull_seven_rep =
-      RedisModule_Call(ctx, "dehydrator.pull", "cc", "TEST_DEHYDRATOR_poll", "e7");
+      RedisModule_Call(ctx, "REDE.pull", "cc", "TEST_DEHYDRATOR_poll", "e7");
   RMUtil_Assert(RedisModule_CallReplyType(pull_seven_rep) != REDISMODULE_REPLY_ERROR);
 
   // poll - make sure no element pops right out
   RedisModuleCallReply *poll1_rep =
-      RedisModule_Call(ctx, "dehydrator.poll", "c", "TEST_DEHYDRATOR_poll");
+      RedisModule_Call(ctx, "REDE.poll", "c", "TEST_DEHYDRATOR_poll");
   RMUtil_Assert(RedisModule_CallReplyType(poll1_rep) != REDISMODULE_REPLY_ERROR);
   RMUtil_Assert(RedisModule_CallReplyLength(poll1_rep) == 0);
 
@@ -1011,12 +1011,12 @@ int TestPoll(RedisModuleCtx *ctx)
   // push element 3b (for 3 seconds)
   // 3b
   RedisModuleCallReply *push_three_b =
-      RedisModule_Call(ctx, "dehydrator.push", "cccc", "TEST_DEHYDRATOR_poll", "e3b", "element_3b", "3");
+      RedisModule_Call(ctx, "REDE.push", "cccc", "TEST_DEHYDRATOR_poll", "e3b", "element_3b", "3");
   RMUtil_Assert(RedisModule_CallReplyType(push_three_b) != REDISMODULE_REPLY_ERROR);
 
   // poll (t=1) - we expect only element 1 to pop out
   RedisModuleCallReply *poll_two_rep =
-      RedisModule_Call(ctx, "dehydrator.poll", "c", "TEST_DEHYDRATOR_poll");
+      RedisModule_Call(ctx, "REDE.poll", "c", "TEST_DEHYDRATOR_poll");
   RMUtil_Assert(RedisModule_CallReplyType(poll_two_rep) != REDISMODULE_REPLY_ERROR);
   RMUtil_Assert(RedisModule_CallReplyLength(poll_two_rep) == 1);
   RedisModuleCallReply *subreply_a = RedisModule_CallReplyArrayElement(poll_two_rep, 0);
@@ -1025,7 +1025,7 @@ int TestPoll(RedisModuleCtx *ctx)
   // sleep 2 secs and poll (t=3) - we expect only element 3a to pop out
   sleep(2);
   RedisModuleCallReply *poll_three_rep =
-      RedisModule_Call(ctx, "dehydrator.poll", "c", "TEST_DEHYDRATOR_poll");
+      RedisModule_Call(ctx, "REDE.poll", "c", "TEST_DEHYDRATOR_poll");
   RMUtil_Assert(RedisModule_CallReplyType(poll_three_rep) != REDISMODULE_REPLY_ERROR);
   RMUtil_Assert(RedisModule_CallReplyLength(poll_three_rep) == 1);
   RedisModuleCallReply *subreply_b = RedisModule_CallReplyArrayElement(poll_three_rep, 0);
@@ -1035,7 +1035,7 @@ int TestPoll(RedisModuleCtx *ctx)
   // sleep 2 secs and poll (t=5) - we expect elements 4 and 3b to pop out
   sleep(2);
   RedisModuleCallReply *poll_four_rep =
-      RedisModule_Call(ctx, "dehydrator.poll", "c", "TEST_DEHYDRATOR_poll");
+      RedisModule_Call(ctx, "REDE.poll", "c", "TEST_DEHYDRATOR_poll");
   RMUtil_Assert(RedisModule_CallReplyType(poll_four_rep) != REDISMODULE_REPLY_ERROR);
   RMUtil_Assert(RedisModule_CallReplyLength(poll_four_rep) == 2);
   RedisModuleCallReply *subreply_c_first = RedisModule_CallReplyArrayElement(poll_four_rep, 0);
@@ -1057,7 +1057,7 @@ int TestPoll(RedisModuleCtx *ctx)
 
   // sleep 6 secs and poll (t=11) - we expect that element 7 will NOT pop out, because we already pulled it
   sleep(6);
-  RedisModuleCallReply *poll_five_rep = RedisModule_Call(ctx, "dehydrator.poll", "c", "TEST_DEHYDRATOR_poll");
+  RedisModuleCallReply *poll_five_rep = RedisModule_Call(ctx, "REDE.poll", "c", "TEST_DEHYDRATOR_poll");
   RMUtil_Assert(RedisModule_CallReplyType(poll_five_rep) != REDISMODULE_REPLY_ERROR);
   RMUtil_Assert(RedisModule_CallReplyLength(poll_five_rep) == 0);
 
@@ -1087,7 +1087,7 @@ int TestModule(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 int RedisModule_OnLoad(RedisModuleCtx *ctx)
 {
     // Register the module itself
-    if (RedisModule_Init(ctx, "dehydrator", 1, REDISMODULE_APIVER_1) ==
+    if (RedisModule_Init(ctx, "REDE", 1, REDISMODULE_APIVER_1) ==
       REDISMODULE_ERR) {
         return REDISMODULE_ERR;
     }
@@ -1102,31 +1102,32 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx)
     if (DehydratorType == NULL) return REDISMODULE_ERR;
 
     // register TimeToNextCommand - using the shortened utility registration macro
-    RMUtil_RegisterWriteCmd(ctx, "dehydrator.ttn", TimeToNextCommand);
+    RMUtil_RegisterWriteCmd(ctx, "REDE.TTN", TimeToNextCommand);
 
     // register dehydrator.update - using the shortened utility registration macro
-    RMUtil_RegisterWriteCmd(ctx, "dehydrator.update", UpdateCommand);
+    RMUtil_RegisterWriteCmd(ctx, "REDE.UPDATE", UpdateCommand);
 
     // register dehydrator.push - using the shortened utility registration macro
-    RMUtil_RegisterWriteCmd(ctx, "dehydrator.push", PushCommand);
+    RMUtil_RegisterWriteCmd(ctx, "REDE.PUSH", PushCommand);
 
     // register dehydrator.pull - using the shortened utility registration macro
-    RMUtil_RegisterWriteCmd(ctx, "dehydrator.pull", PullCommand);
-
-    // register dehydrator.pop - using the shortened utility registration macro
-    RMUtil_RegisterWriteCmd(ctx, "dehydrator.pop", PullCommand);
+    RMUtil_RegisterWriteCmd(ctx, "REDE.PULL", PullCommand);
 
     // register dehydrator.poll - using the shortened utility registration macro
-    RMUtil_RegisterWriteCmd(ctx, "dehydrator.poll", PollCommand);
+    RMUtil_RegisterWriteCmd(ctx, "REDE.POLL", PollCommand);
 
     // register dehydrator.look - using the shortened utility registration macro
-    RMUtil_RegisterReadCmd(ctx, "dehydrator.look", LookCommand);
+    RMUtil_RegisterReadCmd(ctx, "REDE.LOOK", LookCommand);
+
+
+    // THESE TWO ARE UTIL COMMANDS (PRINT IS NOT EVEN LISTED IN THE README),
+    //  THEY OUTPUT TO THE SERVER SIDE, USE WITH CAUTION
 
     // register the unit test
-    RMUtil_RegisterWriteCmd(ctx, "dehydrator.test", TestModule);
+    RMUtil_RegisterWriteCmd(ctx, "REDE.TEST", TestModule);
 
     // register dehydrator.print - using the shortened utility registration macro
-    RMUtil_RegisterWriteCmd(ctx, "dehydrator.print", PrintCommand);
+    RMUtil_RegisterWriteCmd(ctx, "REDE.PRINT", PrintCommand);
 
 
     return REDISMODULE_OK;

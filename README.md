@@ -3,7 +3,7 @@
 :rocket:**TL;DR - A Dehydrator is a fancy delayed queue, see what commands this module provides [HERE](Commands.md)**
 
 
-**ReDe** /'redɪ/ *n* a simple Redis Module for data dehydration. This is a pretty straightforward implementation of the dehydration system depicted in the article "[Fast Data](https://goo.gl/DDFFPO)". The Goal of this module is to solve the *Contextual Completeness* and *Emergent Relevancy* problems by adding the ability to postpone incoming elements to a later time in which we will have a complete information for these elements. Effectively acting as a snooze button to any element.
+**ReDe** /'redɪ/ *n.* a simple Redis Module for data dehydration. This is a pretty straightforward implementation of the dehydration system depicted in the article "[Fast Data](https://goo.gl/DDFFPO)". The Goal of this module is to solve the *Contextual Completeness* and *Emergent Relevancy* problems by adding the ability to postpone incoming elements to a later time in which we will have a complete information for these elements. Effectively acting as a snooze button to any element.
 
 From the article:
 > Dehydrators are simplistic time machines. They transport data elements that arrived prematurely in terms of their context right to the future where they might be needed, without loading the system while waiting. This concept is achieved by attaching a time-indexed data store to a clock, storing elements as they arrive to the dehydrator and re-introducing them as inputs to the system once a predetermined time period has passed.
@@ -16,7 +16,15 @@ The module works by adding a new type to Redis -`DehydratorType`. It will be cea
 
 ![a gif that shows basic usage](redehy-basics.gif)
 
-## What it includes:
+## Common Use Cases
+
+    * **Stream Coordination** -  Make data from one stream wait for the corresponding data from another (preferebly using sliding-window style timing).
+    * **Event Rate Limitation** - Delay any event beyond current max throughput to the next available time slot, while preserving order.
+    * **Self Cleaning Claims-Check** - Store data for a well known period, without the need to search for it when it is expired or clear it from the data-store yourself.
+    * **Task Timer** - Assign actions and their respective payloads to a specific point in time.
+    *
+
+## What this repo includes:
 
 ### 1. Dehydration module source code
 
@@ -54,15 +62,15 @@ The dehydrator is an effective 'snooze button' for events, you push an event int
 
 **It includes 4 main commands:**
 
-* [`DEHYDRATOR.PUSH`](Commands.md/#push) - Push an element, it will need an id, the element itself and dehydration time in seconds. 
-* [`DEHYDRATOR.PULL`](Commands.md/#pull) - Pull the element with the appropriate id before it expires.
-* [`DEHYDRATOR.POLL`](Commands.md/#poll) - Pull and return all the expired elements.
-* [`DEHYDRATOR.LOOK`](Commands.md/#look) - Search the dehydrator for an element with the given id and if found return it's payload (without pulling).
-* [`DEHYDRATOR.UPDATE`](Commands.md/#update) - Set the element represented by a given id, the current element will be returned, and the new element will inherit the current expiration.
-* [`DEHYDRATOR.TTN`](Commands.md/#ttn) - Return the minimal time between now and the first expiration
+* [`REDE.PUSH`](Commands.md/#push) - Push an element, it will need an id, the element itself and dehydration time in seconds.
+* [`REDE.PULL`](Commands.md/#pull) - Pull the element with the appropriate id before it expires.
+* [`REDE.POLL`](Commands.md/#poll) - Pull and return all the expired elements.
+* [`REDE.LOOK`](Commands.md/#look) - Search the dehydrator for an element with the given id and if found return it's payload (without pulling).
+* [`REDE.UPDATE`](Commands.md/#update) - Set the element represented by a given id, the current element will be returned, and the new element will inherit the current expiration.
+* [`REDE.TTN`](Commands.md/#ttn) - Return the minimal time between now and the first expiration
 
 **The module also includes a test command:**
-* `DEHYDRATOR.TEST`  - a set of unit tests of the above commands. **NOTE!** This command is running in fixed time (~15 seconds) as it uses `sleep` (dios mio, No! &#x271e;&#x271e;&#x271e;).
+* `REDE.TEST`  - a set of unit tests of the above commands. **NOTE!** This command is running in fixed time (~15 seconds) as it uses `sleep` (dios mio, No! &#x271e;&#x271e;&#x271e;).
 
 *see more about the commands in [Commands.md](Commands.md)*
 
@@ -77,34 +85,34 @@ Here's what you need to do to build this module:
 Now run `redis-cli` and try the commands:
 
 ```
-127.0.0.1:9979> DEHYDRATOR.PUSH some_dehy id1 world 15
+127.0.0.1:9979> REDE.PUSH some_dehy id1 world 15
 OK
-127.0.0.1:9979> DEHYDRATOR.PUSH some_dehy id2 hello 1
+127.0.0.1:9979> REDE.PUSH some_dehy id2 hello 1
 OK
-127.0.0.1:9979> DEHYDRATOR.PUSH some_dehy id3 goodbye 2
+127.0.0.1:9979> REDE.PUSH some_dehy id3 goodbye 2
 OK
-127.0.0.1:9979> DEHYDRATOR.PULL some_dehy id3
+127.0.0.1:9979> REDE.PULL some_dehy id3
 "goodbye"
-127.0.0.1:9979> DEHYDRATOR.POLL some_dehy
+127.0.0.1:9979> REDE.POLL some_dehy
 1) "hello"
-127.0.0.1:9979> DEHYDRATOR.POLL some_dehy
+127.0.0.1:9979> REDE.POLL some_dehy
 (empty list or set)
-127.0.0.1:6379> DEHYDRATOR.LOOK some_dehy id2
+127.0.0.1:6379> REDE.LOOK some_dehy id2
 (nil)
-127.0.0.1:6379> DEHYDRATOR.LOOK some_dehy id1
+127.0.0.1:6379> REDE.LOOK some_dehy id1
 "world"
-127.0.0.1:6379> DEHYDRATOR.PULL some_dehy id2
+127.0.0.1:6379> REDE.PULL some_dehy id2
 (nil)
-127.0.0.1:6379> DEHYDRATOR.TTN some_dehy
+127.0.0.1:6379> REDE.TTN some_dehy
 8
 ```
 
-This `(empty list or set)` reply from `DEHYDRATOR.POLL` means that the there are no more items to pull right now, so we'll have to wait until enough time passes for our next element to expire. using DEHYDRATOR.TTN we can see this will be in 8 seconds (in this example we waited a bit between commands). Once 8 seconds will pass we can run:
+This `(empty list or set)` reply from `REDE.POLL` means that the there are no more items to pull right now, so we'll have to wait until enough time passes for our next element to expire. using REDE.TTN we can see this will be in 8 seconds (in this example we waited a bit between commands). Once 8 seconds will pass we can run:
 
 ```
-127.0.0.1:9979> DEHYDRATOR.POLL some_dehy
+127.0.0.1:9979> REDE.POLL some_dehy
 1) "world"
-127.0.0.1:9979> DEHYDRATOR.TEST
+127.0.0.1:9979> REDE.TEST
 PASS
 (15.00s)
 127.0.0.1:9979> DEL some_dehy

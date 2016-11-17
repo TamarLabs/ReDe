@@ -2,12 +2,12 @@
 
 ### Commands described in this document
 
-1. [`DEHYDRATOR.PUSH`](#push)
-2. [`DEHYDRATOR.PULL`](#pull)
-3. [`DEHYDRATOR.POLL`](#poll)
-4. [`DEHYDRATOR.LOOK`](#look)
-5. [`DEHYDRATOR.TTN`](#ttn)
-6. [`DEHYDRATOR.UPDATE`](#update)
+1. [`REDE.PUSH`](#push)
+2. [`REDE.PULL`](#pull)
+3. [`REDE.POLL`](#poll)
+4. [`REDE.LOOK`](#look)
+5. [`REDE.TTN`](#ttn)
+6. [`REDE.UPDATE`](#update)
 
 ### Performance of commands in events/second by version
 | Command       | 0.1.0  |  0.2.*  | 0.3.0   |
@@ -35,16 +35,16 @@ Note: if the key does not exist this command will create a Dehydrator on it.
 
 Example
 ```
-redis> DEHYDRATOR.PUSH my_dehydrator 101 "Dehydrate this" 3
+redis> REDE.PUSH my_dehydrator 101 "Dehydrate this" 3
 OK
-redis> DEHYDRATOR.LOOK my_dehydrator 101
+redis> REDE.LOOK my_dehydrator 101
 "Dehydrate this"
-redis> DEHYDRATOR.POLL my_dehydrator
+redis> REDE.POLL my_dehydrator
 (empty list or set)
 ```
 wait for 3 seconds
 ```
-redis> DEHYDRATOR.POLL my_dehydrator
+redis> REDE.POLL my_dehydrator
 "Dehydrate this"
 ```
 
@@ -65,11 +65,11 @@ The element represented by `element_id` on success, Null if key is empty or not 
 
 Example
 ```
-redis> DEHYDRATOR.PUSH my_dehydrator 101 "Dehydrate this" 3
+redis> REDE.PUSH my_dehydrator 101 "Dehydrate this" 3
 OK
-redis> DEHYDRATOR.PULL my_dehydrator 101
+redis> REDE.PULL my_dehydrator 101
 "Dehydrate this"
-redis> DEHYDRATOR.PULL my_dehydrator 101
+redis> REDE.PULL my_dehydrator 101
 (nil)
 ```
 
@@ -89,21 +89,21 @@ List of all expired elements on success, or an empty list if no elements are exp
 
 Example
 ```
-redis> DEHYDRATOR.PUSH my_dehydrator 101 "Dehydrate this" 3
+redis> REDE.PUSH my_dehydrator 101 "Dehydrate this" 3
 OK
-redis> DEHYDRATOR.PUSH my_dehydrator 102 "Dehydrate that" 1
+redis> REDE.PUSH my_dehydrator 102 "Dehydrate that" 1
 OK
-redis> DEHYDRATOR.POLL my_dehydrator
+redis> REDE.POLL my_dehydrator
 (empty list or set)
 ```
 wait for 1 second
 ```
-redis> DEHYDRATOR.POLL my_dehydrator
+redis> REDE.POLL my_dehydrator
 ("Dehydrate that")
 ```
 wait additional 2 seconds
 ```
-redis> DEHYDRATOR.POLL my_dehydrator
+redis> REDE.POLL my_dehydrator
 ("Dehydrate this")
 ```
 
@@ -124,15 +124,15 @@ The element represented by `element_id` on success, Null if key is empty or not 
 
 Example
 ```
-redis> DEHYDRATOR.PUSH my_dehydrator 101 "Dehydrate this" 3
+redis> REDE.PUSH my_dehydrator 101 "Dehydrate this" 3
 OK
-redis> DEHYDRATOR.PUSH my_dehydrator 102 "Dehydrate that" 3
+redis> REDE.PUSH my_dehydrator 102 "Dehydrate that" 3
 OK
-redis> DEHYDRATOR.LOOK my_dehydrator 101
+redis> REDE.LOOK my_dehydrator 101
 "Dehydrate this"
-redis> DEHYDRATOR.LOOK my_dehydrator 102
+redis> REDE.LOOK my_dehydrator 102
 "Dehydrate that"
-redis> DEHYDRATOR.LOOK my_dehydrator 102
+redis> REDE.LOOK my_dehydrator 102
 (nil)
 ```
 
@@ -154,20 +154,20 @@ int representing the number of seconds until next element will expire. Null if `
 
 Example
 ```
-redis> DEHYDRATOR.PUSH my_dehydrator 101 "Dehydrate this" 3
+redis> REDE.PUSH my_dehydrator 101 "Dehydrate this" 3
 OK
-redis> DEHYDRATOR.PUSH my_dehydrator 102 "Dehydrate that" 1
+redis> REDE.PUSH my_dehydrator 102 "Dehydrate that" 1
 OK
-redis> DEHYDRATOR.TTN my_dehydrator
+redis> REDE.TTN my_dehydrator
 1
 ```
 wait for 1 second
 ```
-redis> DEHYDRATOR.TTN my_dehydrator
+redis> REDE.TTN my_dehydrator
 0
-redis> DEHYDRATOR.POLL my_dehydrator
+redis> REDE.POLL my_dehydrator
 ("Dehydrate that")
-redis> DEHYDRATOR.TTN my_dehydrator
+redis> REDE.TTN my_dehydrator
 2
 ```
 
@@ -190,10 +190,10 @@ Note: the expiration time of `new_element` will not be the same as the original 
 
 Example
 ```
-redis> DEHYDRATOR.PUSH my_dehydrator 101 "Dehydrate this" 3
+redis> REDE.PUSH my_dehydrator 101 "Dehydrate this" 3
 OK
-redis> DEHYDRATOR.UPDATE my_dehydrator 101 "Dehydrate that"
+redis> REDE.UPDATE my_dehydrator 101 "Dehydrate that"
 "Dehydrate this"
-redis> DEHYDRATOR.LOOK my_dehydrator 101
+redis> REDE.LOOK my_dehydrator 101
 "Dehydrate that"
 ```

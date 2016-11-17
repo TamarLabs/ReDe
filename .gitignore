@@ -36,3 +36,4 @@
 *.db
 .vscode
 rmutil/test_vector
+release
