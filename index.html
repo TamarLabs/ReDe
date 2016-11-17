@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="UTF-8">
+    <title>Rede by TamarLabs</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" href="stylesheets/normalize.css" media="screen">
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/github-light.css" media="screen">
+  </head>
+  <body>
+    <section class="page-header">
+      <h1 class="project-name">Rede</h1>
+      <h2 class="project-tagline">A Redis dehydrator module</h2>
+      <a href="https://github.com/TamarLabs/ReDe" class="btn">View on GitHub</a>
+      <a href="https://github.com/TamarLabs/ReDe/zipball/master" class="btn">Download .zip</a>
+      <a href="https://github.com/TamarLabs/ReDe/tarball/master" class="btn">Download .tar.gz</a>
+    </section>
+
+    <section class="main-content">
+      <h1>
+<a id="rede---a-redis-element-dehydration-module" class="anchor" href="#rede---a-redis-element-dehydration-module" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>ReDe - A Redis Element Dehydration Module</h1>
+
+<p><g-emoji alias="rocket" fallback-src="https://assets-cdn.github.com/images/icons/emoji/unicode/1f680.png" ios-version="6.0">🚀</g-emoji><strong>TL;DR - A Dehydrator is a fancy delayed queue, see what commands this module provides <a href="Commands.md">HERE</a></strong></p>
+
+<p><strong>ReDe</strong> /'redɪ/ <em>n.</em> a simple Redis Module for data dehydration. This is a pretty straightforward implementation of the dehydration system depicted in the article "<a href="https://goo.gl/DDFFPO">Fast Data</a>". The Goal of this module is to solve the <em>Contextual Completeness</em> and <em>Emergent Relevancy</em> problems by adding the ability to postpone incoming elements to a later time in which we will have a complete information for these elements. Effectively acting as a snooze button to any element.</p>
+
+<p>From the article:</p>
+
+<blockquote>
+<p>Dehydrators are simplistic time machines. They transport data elements that arrived prematurely in terms of their context right to the future where they might be needed, without loading the system while waiting. This concept is achieved by attaching a time-indexed data store to a clock, storing elements as they arrive to the dehydrator and re-introducing them as inputs to the system once a predetermined time period has passed.</p>
+</blockquote>
+
+<p>Using this system it is also possible to craft a self cleaning "claims check", to minimize load on transportation and manipulation nodes of a pipeline architecture.</p>
+
+<p><em>You can read further on the algorithm behind this module <a href="Algorithm.md">here</a>.</em></p>
+
+<p>The module works by adding a new type to Redis -<code>DehydratorType</code>. It will be ceated automatically when you call a push command on it, and it can be deleted using the <code>DEL</code> command like any other key.</p>
+
+<p><img src="redehy-basics.gif" alt="a gif that shows basic usage"></p>
+
+<h2>
+<a id="common-use-cases" class="anchor" href="#common-use-cases" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Common Use Cases</h2>
+
+<pre><code>* **Stream Coordination** -  Make data from one stream wait for the corresponding data from another (preferebly using sliding-window style timing).
+* **Event Rate Limitation** - Delay any event beyond current max throughput to the next available time slot, while preserving order.
+* **Self Cleaning Claims-Check** - Store data for a well known period, without the need to search for it when it is expired or clear it from the data-store yourself.
+* **Task Timer** - Assign actions and their respective payloads to a specific point in time.
+</code></pre>
+
+<hr>
+
+<h2>
+<a id="what-this-repo-includes" class="anchor" href="#what-this-repo-includes" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>What this repo includes:</h2>
+
+<h3>
+<a id="1-dehydration-module-source-code" class="anchor" href="#1-dehydration-module-source-code" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>1. Dehydration module source code</h3>
+
+<p><a href="module.c">module.c</a> - Build it, read it, love it, extend it (PRs are welcome)!</p>
+
+<h3>
+<a id="2-usage-example-files-and-load-tests" class="anchor" href="#2-usage-example-files-and-load-tests" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>2. usage example files and load tests</h3>
+
+<p>In this repository there are two python files that exemplify the usage of the module:</p>
+
+<ul>
+<li>
+<a href="helloworld.py">helloworld.py</a> - very simple usage example of all the functions exposed by the module</li>
+<li>
+<a href="test.py">test.py</a> - run internal as well as external functional tests, load test and print it all to stdout.</li>
+</ul>
+
+<h3>
+<a id="3-klib-khash" class="anchor" href="#3-klib-khash" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>3. klib <a href="khash.h">khash</a>
+</h3>
+
+<p>A set of macros to create the hash maps used to implement the dehydrator type.</p>
+
+<h3>
+<a id="4-librmutil" class="anchor" href="#4-librmutil" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>4. LibRMUtil</h3>
+
+<p>From <a href="https://github.com/RedisLabs/RedisModulesSDK">Redis Modules SDK</a> README:</p>
+
+<p>A small library of utility functions and macros for module developers, including:</p>
+
+<ul>
+<li>Easier argument parsing for your commands.</li>
+<li>Testing utilities that allow you to wrap your module's tests as a redis command.</li>
+<li>
+<code>RedisModuleString</code> utility functions (formatting, comparison, etc)</li>
+<li>The entire <code>sds</code> string library, lifted from Redis itself.</li>
+<li>A generic scalable Vector library. Not redis specific but we found it useful.</li>
+<li>A few other helpful macros and functions.</li>
+<li>
+<code>alloc.h</code>, an include file that allows modules implementing data types to implicitly replace the <code>malloc()</code> function family with the Redis special allocation wrappers.</li>
+</ul>
+
+<p>It can be found under the <code>rmutil</code> folder, and compiles into a static library you link your module against.    </p>
+
+<h2>
+<a id="usage" class="anchor" href="#usage" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Usage</h2>
+
+<p>The dehydrator is an effective 'snooze button' for events, you push an event into it along with an id (for future referance) and in how many seconds you want it back, and poll whenever you want the elements back. only expired elements would pop out.</p>
+
+<p><strong>It includes 4 main commands:</strong></p>
+
+<ul>
+<li>
+<a href="Commands.md/#push"><code>REDE.PUSH</code></a> - Push an element, it will need an id, the element itself and dehydration time in seconds.</li>
+<li>
+<a href="Commands.md/#pull"><code>REDE.PULL</code></a> - Pull the element with the appropriate id before it expires.</li>
+<li>
+<a href="Commands.md/#poll"><code>REDE.POLL</code></a> - Pull and return all the expired elements.</li>
+<li>
+<a href="Commands.md/#look"><code>REDE.LOOK</code></a> - Search the dehydrator for an element with the given id and if found return it's payload (without pulling).</li>
+<li>
+<a href="Commands.md/#update"><code>REDE.UPDATE</code></a> - Set the element represented by a given id, the current element will be returned, and the new element will inherit the current expiration.</li>
+<li>
+<a href="Commands.md/#ttn"><code>REDE.TTN</code></a> - Return the minimal time between now and the first expiration</li>
+</ul>
+
+<p><strong>The module also includes a test command:</strong></p>
+
+<ul>
+<li>
+<code>REDE.TEST</code>  - a set of unit tests of the above commands. <strong>NOTE!</strong> This command is running in fixed time (~15 seconds) as it uses <code>sleep</code> (dios mio, No! ✞✞✞).</li>
+</ul>
+
+<p><em>see more about the commands in <a href="Commands.md">Commands.md</a></em></p>
+
+<h3>
+<a id="quick-start-guide" class="anchor" href="#quick-start-guide" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Quick Start Guide</h3>
+
+<p>Here's what you need to do to build this module:</p>
+
+<ol>
+<li>Build Redis in a build supporting modules.</li>
+<li>Build the module: <code>make</code>
+</li>
+<li>Run Redis loading the module: <code>/path/to/redis-server --loadmodule ./example/module.so</code>
+</li>
+</ol>
+
+<p>Now run <code>redis-cli</code> and try the commands:</p>
+
+<pre><code>127.0.0.1:9979&gt; REDE.PUSH some_dehy id1 world 15
+OK
+127.0.0.1:9979&gt; REDE.PUSH some_dehy id2 hello 1
+OK
+127.0.0.1:9979&gt; REDE.PUSH some_dehy id3 goodbye 2
+OK
+127.0.0.1:9979&gt; REDE.PULL some_dehy id3
+"goodbye"
+127.0.0.1:9979&gt; REDE.POLL some_dehy
+1) "hello"
+127.0.0.1:9979&gt; REDE.POLL some_dehy
+(empty list or set)
+127.0.0.1:6379&gt; REDE.LOOK some_dehy id2
+(nil)
+127.0.0.1:6379&gt; REDE.LOOK some_dehy id1
+"world"
+127.0.0.1:6379&gt; REDE.PULL some_dehy id2
+(nil)
+127.0.0.1:6379&gt; REDE.TTN some_dehy
+8
+</code></pre>
+
+<p>This <code>(empty list or set)</code> reply from <code>REDE.POLL</code> means that the there are no more items to pull right now, so we'll have to wait until enough time passes for our next element to expire. using REDE.TTN we can see this will be in 8 seconds (in this example we waited a bit between commands). Once 8 seconds will pass we can run:</p>
+
+<pre><code>127.0.0.1:9979&gt; REDE.POLL some_dehy
+1) "world"
+127.0.0.1:9979&gt; REDE.TEST
+PASS
+(15.00s)
+127.0.0.1:9979&gt; DEL some_dehy
+OK
+</code></pre>
+
+<p>Enjoy!</p>
+
+<h2>
+<a id="future-work" class="anchor" href="#future-work" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Future work</h2>
+
+<ul>
+<li>Additional, more thorough tests</li>
+<li>add some sort of pub/sub mechanism to POLL</li>
+<li>whatever you suggest</li>
+</ul>
+
+<h2>
+<a id="about-this-module" class="anchor" href="#about-this-module" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>About This Module</h2>
+
+<p>This module is based off a python version of the same concepts developed in Tamar Labs by Adam Lev-Libfeld and Alexander Margolin and designed by Adam Lev-Libfeld in mid 2015.</p>
+
+<p>The Redis module was created by Adam Lev-Libfeld during the RedisModulesHackathon in late 2016, and is maintained by him solely.</p>
+
+      <footer class="site-footer">
+        <span class="site-footer-owner"><a href="https://github.com/TamarLabs/ReDe">Rede</a> is maintained by <a href="https://github.com/TamarLabs">TamarLabs</a>.</span>
+
+        <span class="site-footer-credits">This page was generated by <a href="https://pages.github.com">GitHub Pages</a> using the <a href="https://github.com/jasonlong/cayman-theme">Cayman theme</a> by <a href="https://twitter.com/jasonlong">Jason Long</a>.</span>
+      </footer>
+
+    </section>
+
+  
+  </body>
+</html>
