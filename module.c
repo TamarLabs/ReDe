@@ -557,6 +557,7 @@ int TimeToNextCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         return REDISMODULE_OK;
     }
 
+    time_t now = time(0);
     int time_to_next = -1;
 
 	khiter_t k;
@@ -567,7 +568,7 @@ int TimeToNextCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         ElementListNode* head = list->head;
         if (head != NULL)
         {
-            int tmp = head->expiration - time(0);
+            int tmp = head->expiration - now;
             if (tmp <= 0)
             {
                 time_to_next = 0;
@@ -784,6 +785,7 @@ int PollCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 
     RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
     int expired_element_num = 0;
+    time_t now = time(0);
     // for each timeout_queue in timeout_queues
     khiter_t k;
     for (k = kh_begin(dehydrator->timeout_queues); k != kh_end(dehydrator->timeout_queues); ++k)
@@ -794,11 +796,12 @@ int PollCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         while ((list != NULL) && (!done_with_queue))
         {
             ElementListNode* head = list->head;
-            if ((head != NULL) && (head->expiration <= time(0)))
+            if ((head != NULL) && (head->expiration <= now))
             {
                 ElementListNode* node = _listPop(list);
                 _removeNodeFromMapping(dehydrator, node);
                 RedisModule_ReplyWithString(ctx, node->element); // append node->element to output
+                deleteNode(node);
                 ++expired_element_num;
             }
             else
