@@ -8,6 +8,8 @@
 From the article:
 > Dehydrators are simplistic time machines. They transport data elements that arrived prematurely in terms of their context right to the future where they might be needed, without loading the system while waiting. This concept is achieved by attaching a time-indexed data store to a clock, storing elements as they arrive to the dehydrator and re-introducing them as inputs to the system once a predetermined time period has passed.
 
+![a schematic view of the Filter-Split-Dehydrate architecture](FSD-scheme.png)
+
 Using this system it is also possible to craft a self cleaning "claims check", to minimize load on transportation and manipulation nodes of a pipeline architecture.
 
 *You can read further on the algorithm behind this module [here](Algorithm.md).*
