@@ -1,8 +1,7 @@
 [![GitHub version](https://img.shields.io/github/release/tamarlabs/rede.svg?style=flat-square)](https://github.com/TamarLabs/ReDe/releases/latest)
 ![issues count](https://img.shields.io/github/issues/tamarlabs/rede.svg?style=flat-square)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg?style=flat-square&colorB=green)](LICENSE)
-
-# ReDe - The Redis Element Dehydration Module
+<h1>  ReDe - The <img src="https://upload.wikimedia.org/wikipedia/en/6/6b/Redis_Logo.svg" alt="redis" height="47" align="top"/> Element Dehydration Module</h1>
 
 :rocket:**TL;DR - A Dehydrator is a fancy delayed queue, see what commands this module provides [HERE](Commands.md)**
 
