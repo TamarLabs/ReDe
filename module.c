@@ -447,12 +447,11 @@ void *DehydratorTypeRdbLoad(RedisModuleIO *rdb, int encver)
 		uint64_t node_num = RedisModule_LoadUnsigned(rdb);
 		while(node_num--)
 		{
-			RedisModuleString* element = RedisModule_LoadString(rdb);
+            uint64_t expiration = RedisModule_LoadUnsigned(rdb);
 			RedisModuleString* element_id = RedisModule_LoadString(rdb);
-			uint64_t expiration = RedisModule_LoadUnsigned(rdb);
+            RedisModuleString* element = RedisModule_LoadString(rdb);
 
 			ElementListNode* node  = _createNewNode(element, element_id, ttl, expiration);
-
 			_listPush(timeout_queue, node);
 
 			// mark element dehytion location in element_nodes
