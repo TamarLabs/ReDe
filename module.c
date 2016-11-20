@@ -421,12 +421,12 @@ void DehydratorTypeRdbSave(RedisModuleIO *rdb, void *value)
 				RedisModule_SaveUnsigned(rdb, node->expiration);
 				RedisModule_SaveString(rdb, node->element_id);
 				RedisModule_SaveString(rdb, node->element);
+                node = node->next;
 			}
 			else
 			{
 				done_with_queue = 1;
 			}
-			node = node->next;
 		}
 	}
 }

@@ -37,3 +37,4 @@
 .vscode
 rmutil/test_vector
 release
+*.rdb
