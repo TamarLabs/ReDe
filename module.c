@@ -21,7 +21,7 @@ void printRedisStr(RedisModuleString *str, const char* name) {
 
 char* string_append(char* a, const char* b)
 {
-    char* retstr = RedisModule_Alloc(sizeof(a)+sizeof(b));
+    char* retstr = RedisModule_Alloc(strlen(a)+strlen(b));
     strcpy(retstr, a);
     strcat(retstr, b);
     // printf("printing: %s", retstr);
@@ -103,8 +103,6 @@ ElementListNode* _createNewNode(RedisModuleString* element, RedisModuleString* e
 void deleteNode(ElementListNode* node)
 {
     // free everything else related to the node
-    // RedisModule_FreeString(node->element_id); //TODO: make this work
-    // RedisModule_FreeString(node->element); //TODO: make this work
     RedisModule_Free(node);
 }
 
@@ -257,29 +255,24 @@ char* printNode(ElementListNode* node)
 }
 
 
-void printList(ElementList* list)
+char* printList(ElementList* list)
 {
     char* list_str = RedisModule_Alloc(32*sizeof(char));
     ElementListNode* current = list->head;
-    // sprintf(list_str, "len=%d \nhead", list->len);
-    printf("len=%d \nhead", list->len);
+    sprintf(list_str, "(elements=%d)\n   head", list->len);
     // iterate over queue and find the element that has id = element_id
     while(current != NULL)
     {
         list_str = string_append(list_str, "->");
-        printf("->");
-
-
         char* node_str = printNode(current);
-        printf("%s",node_str);
-        // list_str = string_append(list_str, node_str);
+        list_str = string_append(list_str, node_str);
         RedisModule_Free(node_str);
 
         current = current->next;  //move to next node
     }
-    printf("\ntail points to: %s",RedisModule_StringPtrLen(list->tail->element_id, NULL));
-    // list_str = string_append(list_str, "\ntail points to:");
-    // list_str = string_append(list_str, RedisModule_StringPtrLen(list->tail->element_id, NULL));
+    list_str = string_append(list_str, "\n   tail points to: ");
+    list_str = string_append(list_str, RedisModule_StringPtrLen(list->tail->element_id, NULL));
+    list_str = string_append(list_str,"\n");
     return list_str;
 }
 
@@ -337,27 +330,28 @@ Dehydrator* validateDehydratorKey(RedisModuleCtx* ctx, RedisModuleKey* key, Redi
 
 char* printDehydrator(Dehydrator* dehydrator)
 {
-    char* dehy_str = "";
+    char* dehy_str = RedisModule_Alloc(sizeof(char));
     khiter_t k;
 
-    printf("\n======== timeout_queues =========\n");
+    dehy_str = string_append(dehy_str, "\n======== timeout_queues =========");
 	for (k = kh_begin(dehydrator->timeout_queues); k != kh_end(dehydrator->timeout_queues); ++k)
 	{
         if (kh_exist(dehydrator->timeout_queues, k))
 		{
             ElementList* list = kh_value(dehydrator->timeout_queues, k);
-			printf(">>list: %d\n", kh_key(dehydrator->timeout_queues, k) );
-            // char* x = printList(list);
-            printList(list);
-            // printf(">>%s<<\n", x);
-            // RedisModule_Free(x);
-            // char* list_str = printList(list);
-            // dehy_str += list_str;
-            // free(list_str);
+            dehy_str = string_append(dehy_str, "\n>>List: ");
+            char qnum[50];
+            sprintf(qnum,"%d ", kh_key(dehydrator->timeout_queues, k));
+            dehy_str = string_append(dehy_str, qnum);
+
+            char* list_str = printList(list);
+            dehy_str = string_append(dehy_str, list_str);
+            RedisModule_Free(list_str);
 		}
     }
+    dehy_str = string_append(dehy_str, "\n");
 
-    printf("\n======== element_nodes issues =========\n");
+    dehy_str = string_append(dehy_str, "\n======== element_nodes issues =========\n");
     int found_problems = 0;
 	for (k = kh_begin(dehydrator->element_nodes); k != kh_end(dehydrator->element_nodes); ++k)
 	{
@@ -366,18 +360,19 @@ char* printDehydrator(Dehydrator* dehydrator)
 			ElementListNode* node = kh_value(dehydrator->element_nodes, k);
             if (!RMUtil_StringEqualsC(node->element_id, kh_key(dehydrator->element_nodes, k)))
             {
-                printf("node with id: %s is stored under id: %s\n",
-                    RedisModule_StringPtrLen(node->element_id, NULL),
-                    kh_key(dehydrator->element_nodes, k));
+                dehy_str = string_append(dehy_str, RedisModule_StringPtrLen(node->element_id, NULL));
+                dehy_str = string_append(dehy_str, "is stored under id: ");
+                dehy_str = string_append(dehy_str, kh_key(dehydrator->element_nodes, k));
+                dehy_str = string_append(dehy_str, "\n");
                 found_problems = 1;
             }
     	}
 	}
     if (!found_problems)
     {
-        printf("no issues were found.\n");
+        dehy_str = string_append(dehy_str, "no issues were found.\n");
     }
-    printf("================================\n");
+    dehy_str = string_append(dehy_str, "================================\n");
 
     return dehy_str;
 }
@@ -649,7 +644,7 @@ int PrintCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     char* dehy_str = printDehydrator(dehydrator);
     RedisModule_CloseKey(key);
     RedisModule_ReplyWithSimpleString(ctx, dehy_str);
-    // RedisModule_Free(dehy_str);
+    RedisModule_Free(dehy_str);
     return REDISMODULE_OK;
 }
 
