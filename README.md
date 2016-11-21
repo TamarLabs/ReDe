@@ -26,7 +26,7 @@ The module works by adding a new type to Redis -`DehydratorType`. It will be cea
 * **Stream Coordination** -  Make data from one stream wait for the corresponding data from another (preferebly using sliding-window style timing).
 * **Event Rate Limitation** - Delay any event beyond current max throughput to the next available time slot, while preserving order.
 * **Self Cleaning Claims-Check** - Store data for a well known period, without the need to search for it when it is expired or clear it from the data-store yourself.
-* **Task Timer** - Assign actions and their respective payloads to a specific point in time.
+* **Task Timer** - Postpone actions and their respective payloads to a specific point in time.
 
 ## What this repo includes:
 

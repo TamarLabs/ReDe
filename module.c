@@ -18,6 +18,17 @@ void printRedisStr(RedisModuleString *str, const char* name) {
     printf("%s = %s\n", name, RedisModule_StringPtrLen(str, NULL));
 }
 
+
+char* string_append(char* a, const char* b)
+{
+    char* retstr = RedisModule_Alloc(sizeof(a)+sizeof(b));
+    strcpy(retstr, a);
+    strcat(retstr, b);
+    // printf("printing: %s", retstr);
+    RedisModule_Free(a);
+    return retstr;
+}
+
 //##########################################################
 //#
 //#                     Linked List
@@ -233,29 +244,43 @@ ElementListNode* _listFind(ElementList* list, RedisModuleString* element_id)
 }
 
 
-void printNode(ElementListNode* node)
+char* printNode(ElementListNode* node)
 {
-    const char* element_id = RedisModule_StringPtrLen(node->element_id, NULL);
-    const char* element = RedisModule_StringPtrLen(node->element, NULL);
-    printf("[id=%s,elem=%s,ttl=%d,exp=%lld]", element_id, element, node->ttl, node->expiration); // TODO: remove
+    size_t element_id_len;
+    size_t element_len;
+    const char* element_id = RedisModule_StringPtrLen(node->element_id, &element_id_len);
+    const char* element = RedisModule_StringPtrLen(node->element, &element_len);
+    char* node_str = (char*)RedisModule_Alloc((element_id_len+element_len+50)*sizeof(char));
+    sprintf(node_str, "[id=%s,elem=%s,ttl=%d,exp=%lld]", element_id, element, node->ttl, node->expiration);
+    return node_str;
 
 }
 
 
 void printList(ElementList* list)
 {
+    char* list_str = RedisModule_Alloc(32*sizeof(char));
     ElementListNode* current = list->head;
+    // sprintf(list_str, "len=%d \nhead", list->len);
     printf("len=%d \nhead", list->len);
     // iterate over queue and find the element that has id = element_id
     while(current != NULL)
     {
+        list_str = string_append(list_str, "->");
         printf("->");
-        printNode(current);
+
+
+        char* node_str = printNode(current);
+        printf("%s",node_str);
+        // list_str = string_append(list_str, node_str);
+        RedisModule_Free(node_str);
+
         current = current->next;  //move to next node
     }
-    printf("\ntail->");
-    printNode(list->tail);
-    printf("\n");
+    printf("\ntail points to: %s",RedisModule_StringPtrLen(list->tail->element_id, NULL));
+    // list_str = string_append(list_str, "\ntail points to:");
+    // list_str = string_append(list_str, RedisModule_StringPtrLen(list->tail->element_id, NULL));
+    return list_str;
 }
 
 
@@ -310,8 +335,9 @@ Dehydrator* validateDehydratorKey(RedisModuleCtx* ctx, RedisModuleKey* key, Redi
 	}
 }
 
-void printDehydrator(Dehydrator* dehydrator)
+char* printDehydrator(Dehydrator* dehydrator)
 {
+    char* dehy_str = "";
     khiter_t k;
 
     printf("\n======== timeout_queues =========\n");
@@ -321,11 +347,17 @@ void printDehydrator(Dehydrator* dehydrator)
 		{
             ElementList* list = kh_value(dehydrator->timeout_queues, k);
 			printf(">>list: %d\n", kh_key(dehydrator->timeout_queues, k) );
-			printList(list);
+            // char* x = printList(list);
+            printList(list);
+            // printf(">>%s<<\n", x);
+            // RedisModule_Free(x);
+            // char* list_str = printList(list);
+            // dehy_str += list_str;
+            // free(list_str);
 		}
     }
 
-    printf("\n======== element_nodes issues=========\n");
+    printf("\n======== element_nodes issues =========\n");
     int found_problems = 0;
 	for (k = kh_begin(dehydrator->element_nodes); k != kh_end(dehydrator->element_nodes); ++k)
 	{
@@ -345,7 +377,9 @@ void printDehydrator(Dehydrator* dehydrator)
     {
         printf("no issues were found.\n");
     }
-    printf("\n================================\n");
+    printf("================================\n");
+
+    return dehy_str;
 }
 
 
@@ -612,9 +646,10 @@ int PrintCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         return REDISMODULE_OK;
     }
 
-    printDehydrator(dehydrator);
+    char* dehy_str = printDehydrator(dehydrator);
     RedisModule_CloseKey(key);
-    RedisModule_ReplyWithSimpleString(ctx, "DONE");
+    RedisModule_ReplyWithSimpleString(ctx, dehy_str);
+    // RedisModule_Free(dehy_str);
     return REDISMODULE_OK;
 }
 
