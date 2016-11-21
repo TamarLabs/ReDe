@@ -1201,14 +1201,14 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx)
     RMUtil_RegisterReadCmd(ctx, "REDE.LOOK", LookCommand);
 
 
-    // THESE TWO ARE UTIL COMMANDS (PRINT IS NOT EVEN LISTED IN THE README),
-    //  THEY OUTPUT TO THE SERVER SIDE, USE WITH CAUTION
-
+    //  TEST OUTPUTS TO THE SERVER SIDE, USE WITH CAUTION
     // register the unit test
     RMUtil_RegisterWriteCmd(ctx, "REDE.TEST", TestModule);
 
+    // PRINT command works OK, but it is meant for debuging perposes, so it will not be listed in the documentation
     // register dehydrator.print - using the shortened utility registration macro
     RMUtil_RegisterWriteCmd(ctx, "REDE.PRINT", PrintCommand);
+
 
 
     return REDISMODULE_OK;
