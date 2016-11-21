@@ -857,6 +857,43 @@ int TestLook(RedisModuleCtx *ctx)
 }
 
 
+int TestUpdate(RedisModuleCtx *ctx)
+{
+    RedisModule_Call(ctx, "DEL", "c", "TEST_DEHYDRATOR_update");
+    printf("Testing Update - ");
+
+    RedisModuleCallReply *check1 =
+        RedisModule_Call(ctx, "REDE.update", "ccc", "TEST_DEHYDRATOR_update", "test_element", "text");
+    RMUtil_Assert(RedisModule_CallReplyType(check1) == REDISMODULE_REPLY_ERROR);
+
+    RedisModuleCallReply *push1 =
+        RedisModule_Call(ctx, "REDE.push", "cccc", "TEST_DEHYDRATOR_update", "test_element", "some payload", "100");
+    RMUtil_Assert(RedisModule_CallReplyType(push1) != REDISMODULE_REPLY_ERROR);
+
+    RedisModuleCallReply *check2 =
+        RedisModule_Call(ctx, "REDE.update", "ccc", "TEST_DEHYDRATOR_update", "test_element", "some OTHER payload");
+    RMUtil_Assert(RedisModule_CallReplyType(check2) != REDISMODULE_REPLY_ERROR);
+    RMUtil_Assert(RMUtil_StringEqualsC(RedisModule_CreateStringFromCallReply(check2),"some payload"));
+
+    RedisModuleCallReply *check3 =
+        RedisModule_Call(ctx, "REDE.look", "cc", "TEST_DEHYDRATOR_update", "test_element");
+    RMUtil_Assert(RedisModule_CallReplyType(check3) != REDISMODULE_REPLY_ERROR);
+    RMUtil_Assert(RMUtil_StringEqualsC(RedisModule_CreateStringFromCallReply(check3), "some OTHER payload"));
+
+    RedisModuleCallReply *pull1 =
+        RedisModule_Call(ctx, "REDE.pull", "cc", "TEST_DEHYDRATOR_update", "test_element");
+    RMUtil_Assert(RedisModule_CallReplyType(pull1) != REDISMODULE_REPLY_ERROR);
+
+    RedisModuleCallReply *check4 =
+        RedisModule_Call(ctx, "REDE.update", "ccc", "TEST_DEHYDRATOR_update", "test_element", "text");
+    RMUtil_Assert(RedisModule_CallReplyType(check4) == REDISMODULE_REPLY_ERROR);
+
+    RedisModule_Call(ctx, "DEL", "c", "TEST_DEHYDRATOR_update");
+    printf("Passed.\n");
+    return REDISMODULE_OK;
+}
+
+
 int TestTimeToNext(RedisModuleCtx *ctx)
 {
     RedisModule_Call(ctx, "DEL", "c", "TEST_DEHYDRATOR_ttn");
@@ -1079,6 +1116,7 @@ int TestModule(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     RMUtil_Test(TestPull);
     RMUtil_Test(TestPoll);
     RMUtil_Test(TestTimeToNext);
+    RMUtil_Test(TestUpdate);
     printf("All Tests Passed Succesfully!\n");
 
     RedisModule_ReplyWithSimpleString(ctx, "PASS");
