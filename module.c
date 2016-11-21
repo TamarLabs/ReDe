@@ -325,15 +325,26 @@ void printDehydrator(Dehydrator* dehydrator)
 		}
     }
 
-    printf("\n======== element_nodes =========\n");
+    printf("\n======== element_nodes issues=========\n");
+    int found_problems = 0;
 	for (k = kh_begin(dehydrator->element_nodes); k != kh_end(dehydrator->element_nodes); ++k)
 	{
 		if (kh_exist(dehydrator->element_nodes, k))
 		{
 			ElementListNode* node = kh_value(dehydrator->element_nodes, k);
-            printRedisStr(node->element_id,kh_key(dehydrator->element_nodes, k));
+            if (!RMUtil_StringEqualsC(node->element_id, kh_key(dehydrator->element_nodes, k)))
+            {
+                printf("node with id: %s is stored under id: %s\n",
+                    RedisModule_StringPtrLen(node->element_id, NULL),
+                    kh_key(dehydrator->element_nodes, k));
+                found_problems = 1;
+            }
     	}
 	}
+    if (!found_problems)
+    {
+        printf("no issues were found.\n");
+    }
     printf("\n================================\n");
 }
 
