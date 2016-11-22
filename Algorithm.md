@@ -18,9 +18,16 @@ so:
 ## Naive Algorithm 2
 
 An improvement can be done to this algorithm using a queue instead of a the list where items are being stored as the same tuple, but are sorted based on expiration time, not insertion time. This would skew runtimes to be:
-* Push - O(n) (or at best O(log n)), since now we need to scan the queue in order to find where to insert the new element.
+* Push - O(log n), since now we need to scan the queue in order to find where to insert the new element.
 * Pull - still done at O(n)
-* Poll - is now improved to O(m) where m is the number of **expired** items
+* Poll - is now improved to O(m) where m is the number of **expired** items.
+
+
+## Adding an element map
+Using a hash map to help us locate elements faster would improve runtimes to be:
+* Push - O(log n).
+* Pull - O(1) now that we just need to check the map to find a specific element.
+* Poll - O(m)
 
 
 ## Queue-Map Algorithm
@@ -29,6 +36,6 @@ An improvement can be done to this algorithm using a queue instead of a the list
 This Algorithm takes the best from both algorithms, and combines it in a new manner - the idea behind assumes you will have a set of different TTL which is significantly smaller (<<) in size then the amount of items that are stored. Using this assumption we could now store items in a queue based on their TTL. Each queue would be self-sorted by expiration due to the fact that each two consecutive events with the same TTL would have expiration times that correspond with the order in which they have arrived. Polling is done by iterating over the queues and from each queue pop all the elements which expired, once you see an element that has not expired yet, move to next queue.
 Using these rules, and by holding a map of sorted TTL queues we can now:
 
-* Push in O(1) since pulling the TTL from the map takes O(1) and inserting at the head of the queue is also O(1).
-* Pull in O(n), but now n is the number of just the elements with the same TTL.
+* Push in O(1) since pulling the TTL Queue from the map takes O(1) and inserting at the head of this queue is also O(1).
+* Pull in O(1).
 * Poll in O(n) - where n is minimized to just the number of expired elements, notice we regard the number of different TTLs to be a constant and << # of dehydrated elements in the system.
