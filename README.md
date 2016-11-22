@@ -66,8 +66,8 @@ The dehydrator is an effective 'snooze button' for events, you push an event int
 
 **The module include 6 main commands:**
 
-* [`REDE.PUSH`](Commands.md/#push) - Push an element, it will need an id, the element itself and dehydration time in seconds.
-* [`REDE.PULL`](Commands.md/#pull) - Pull the element with the appropriate id before it expires.
+* [`REDE.PUSH`](Commands.md/#push) - Insert an element, it will need an id, the element itself and dehydration time in seconds.
+* [`REDE.PULL`](Commands.md/#pull) - Remove the element with the appropriate id before it expires.
 * [`REDE.POLL`](Commands.md/#poll) - Pull and return all the expired elements.
 * [`REDE.LOOK`](Commands.md/#look) - Search the dehydrator for an element with the given id and if found return it's payload (without pulling).
 * [`REDE.TTN`](Commands.md/#ttn) - Return the minimal time between now and the first expiration
@@ -84,7 +84,7 @@ Here's what you need to do to build this module:
 
 0. Build Redis in a build supporting modules.
 1. Build the module: `make`
-3. Run Redis loading the module: `/path/to/redis-server --loadmodule ./example/module.so`
+3. Run Redis loading the module: `/path/to/redis-server --loadmodule path/to/module.so`
 
 Now run `redis-cli` and try the commands:
 
@@ -128,12 +128,13 @@ Enjoy!
 
 ## Future work
 
+* Auto ID generation
 * Additional, more thorough tests
 * add some sort of pub/sub mechanism to POLL
 * whatever you suggest
 
 ## About This Module
 
-This module is based off a python version of the same concepts developed in Tamar Labs by Adam Lev-Libfeld and Alexander Margolin and designed by Adam Lev-Libfeld in mid 2015.
+This module is based off a python version of the same concepts designed by Adam Lev-Libfeld and developed in Tamar Labs by Adam Lev-Libfeld and Alexander Margolin in mid 2015.
 
 The Redis module was created by Adam Lev-Libfeld during the RedisModulesHackathon in late 2016, and is maintained by him solely.
