@@ -1,5 +1,10 @@
 language: c
 compiler: gcc
 install: make clean && make
-before_script: true
+before_script: 
+  - git checkout https://github.com/antirez/redis.git
+  - cd redis
+  - make
+  - cd ..
+  - ./redis/src/redis-server --loadmodule ./module.so
 script: true
