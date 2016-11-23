@@ -7,4 +7,4 @@ before_script:
   - make
   - cd ..
   - ./redis/src/redis-server --loadmodule ./module.so &
-script: ./test --noload
+script: ./test.py --noload
