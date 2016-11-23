@@ -129,9 +129,8 @@ Enjoy!
 ## Future work
 
 * Auto ID generation
-* Additional, more thorough tests
 * add some sort of pub/sub mechanism to POLL
-* whatever you suggest
+* Additional / more thorough / automatic tests
 
 ## About This Module
 
