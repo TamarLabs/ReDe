@@ -1,10 +1,12 @@
 language: c
 compiler: gcc
+sudo: required
 install: make clean && make
 before_script: 
   - git clone https://github.com/antirez/redis.git
   - cd redis
   - make
+  - sudo pip install redis
   - cd ..
   - ./redis/src/redis-server --loadmodule ./module.so &
 script: ./test.py --noload
