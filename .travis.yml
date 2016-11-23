@@ -6,5 +6,5 @@ before_script:
   - cd redis
   - make
   - cd ..
-  - ./redis/src/redis-server --loadmodule ./module.so
-script: true
+  - ./redis/src/redis-server --loadmodule ./module.so &
+script: ./test --noload
