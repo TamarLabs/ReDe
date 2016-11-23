@@ -2,7 +2,7 @@ language: c
 compiler: gcc
 install: make clean && make
 before_script: 
-  - git checkout https://github.com/antirez/redis.git
+  - git clone https://github.com/antirez/redis.git
   - cd redis
   - make
   - cd ..
