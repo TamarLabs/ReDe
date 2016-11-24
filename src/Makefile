@@ -18,7 +18,7 @@ else
 	SHOBJ_CFLAGS ?= -dynamic -fno-common -g -ggdb
 	SHOBJ_LDFLAGS ?= -bundle -undefined dynamic_lookup
 endif
-CFLAGS = -I$(RM_INCLUDE_DIR) -Wall -g -fPIC -lc -lm -O3 -std=gnu99
+CFLAGS = -I$(RM_INCLUDE_DIR) -Wall -g -fPIC -lc -lm -lrt -O3 -std=gnu99
 CC=gcc
 
 all:  rmutil module.so
@@ -27,7 +27,7 @@ rmutil: FORCE
 	$(MAKE) -C $(RMUTIL_LIBDIR)
 
 module.so: module.o
-	$(LD) -o $@ module.o $(SHOBJ_LDFLAGS) $(LIBS) -L$(RMUTIL_LIBDIR) -lrmutil -lc
+	$(LD) -o $@ module.o $(SHOBJ_LDFLAGS) $(LIBS) -L$(RMUTIL_LIBDIR) -lrmutil -lrt -lc
 
 clean: FORCE
 	rm -rf *.xo *.so *.o

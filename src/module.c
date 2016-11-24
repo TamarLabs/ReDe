@@ -5,6 +5,8 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <time.h>
+#include <inttypes.h>
+#include <math.h>
 #include "khash.h"
 #include "rmutil/util.h"
 #include "rmutil/strings.h"
@@ -28,10 +30,6 @@ char* string_append(char* a, const char* b)
     return retstr;
 }
 
-// #define _POSIX_C_SOURCE 200809L
-
-#include <inttypes.h>
-#include <math.h>
 
 long long current_time_ms (void)
 {
@@ -46,7 +44,6 @@ long long current_time_ms (void)
 
     return s+ms;
 }
-
 
 
 //##########################################################
