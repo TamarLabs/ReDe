@@ -129,7 +129,6 @@ Enjoy!
 ## Future work
 
 * Auto ID generation
-* increase resolution (maybe to millisecond accuracy)
 * add some sort of pub/sub mechanism to POLL
 * Additional / more thorough / automatic tests
 

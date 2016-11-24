@@ -5,9 +5,9 @@ import time
 def helloworld(redis_service):
     redis_service.execute_command("DEL", "helloworld_dehydrator")
     # push some data into the dehydrator
-    redis_service.execute_command("rede.push", "helloworld_dehydrator", "x", "world", 1)
-    redis_service.execute_command("rede.push", "helloworld_dehydrator", "y", "goodbye",2)
-    redis_service.execute_command("rede.push", "helloworld_dehydrator", "z", "derp", 3)
+    redis_service.execute_command("rede.push", "helloworld_dehydrator", "x", "world", 1000)
+    redis_service.execute_command("rede.push", "helloworld_dehydrator", "y", "goodbye",2000)
+    redis_service.execute_command("rede.push", "helloworld_dehydrator", "z", "derp", 3000)
 
     # pull unneeded data before it expires
     redis_service.execute_command("rede.pull", "helloworld_dehydrator", "y")
@@ -23,7 +23,7 @@ def helloworld(redis_service):
     time.sleep(1)
     t1_poll_result = redis_service.execute_command("rede.poll", "helloworld_dehydrator")
 
-    time.sleep(redis_service.execute_command("rede.ttn", "helloworld_dehydrator"))
+    time.sleep(redis_service.execute_command("rede.ttn", "helloworld_dehydrator")/1000.0)
     t3_poll_result = redis_service.execute_command("rede.poll", "helloworld_dehydrator")
 
     print t3_poll_result[0], t1_poll_result[0]

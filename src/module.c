@@ -1,23 +1,22 @@
 #include "redismodule.h"
-#include "rmutil/util.h"
-#include "rmutil/strings.h"
-#include "rmutil/test_util.h"
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <stdint.h>
-#include <stdbool.h>
 #include <stdio.h>
 #include <time.h>
-#include "rmutil/util.h"
 #include "khash.h"
+#include "rmutil/util.h"
+#include "rmutil/strings.h"
+#include "rmutil/test_util.h"
 #include "rmutil/alloc.h"
 
 
-void printRedisStr(RedisModuleString *str, const char* name) {
-    printf("%s = %s\n", name, RedisModule_StringPtrLen(str, NULL));
-}
-
+//##########################################################
+//#
+//#                    C Utilities
+//#
+//#########################################################
 
 char* string_append(char* a, const char* b)
 {
@@ -29,9 +28,30 @@ char* string_append(char* a, const char* b)
     return retstr;
 }
 
+// #define _POSIX_C_SOURCE 200809L
+
+#include <inttypes.h>
+#include <math.h>
+
+long long current_time_ms (void)
+{
+    long            ms; // Milliseconds
+    time_t          s;  // Seconds
+    struct timespec spec;
+
+    clock_gettime(CLOCK_REALTIME, &spec);
+
+    s  = spec.tv_sec*1000;
+    ms = round(spec.tv_nsec / 1.0e6); // Convert nanoseconds to milliseconds
+
+    return s+ms;
+}
+
+
+
 //##########################################################
 //#
-//#                     Linked List
+//#               Linked List Definitions
 //#
 //#########################################################
 
@@ -279,7 +299,7 @@ char* printList(ElementList* list)
 
 //##########################################################
 //#
-//#                     Utilities
+//#               Dehydrator Utilities
 //#
 //#########################################################
 
@@ -596,7 +616,7 @@ int TimeToNextCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         return REDISMODULE_OK;
     }
 
-    time_t now = time(0);
+    time_t now = current_time_ms();
     int time_to_next = -1;
 
 	khiter_t k;
@@ -698,7 +718,6 @@ int PushCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     // timeout str to int ttl
     long long ttl;
     int rep = RedisModule_StringToLongLong(timeout, &ttl);
-
     if (rep == REDISMODULE_ERR) { return REDISMODULE_ERR; }
 
     // get key dehydrator_name
@@ -740,7 +759,7 @@ int PushCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     RedisModuleString* saved_element = RedisModule_CreateStringFromString(ctx, element);
 
     //create an ElementListNode
-    node  = _createNewNode(saved_element, saved_element_id, ttl, time(0) + ttl);
+    node  = _createNewNode(saved_element, saved_element_id, ttl, current_time_ms() + ttl);
 
     // push to tail of the list
     _listPush(timeout_queue, node);
@@ -825,7 +844,7 @@ int PollCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 
     RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
     int expired_element_num = 0;
-    time_t now = time(0);
+    time_t now = current_time_ms();
     // for each timeout_queue in timeout_queues
     khiter_t k;
     for (k = kh_begin(dehydrator->timeout_queues); k != kh_end(dehydrator->timeout_queues); ++k)
@@ -875,7 +894,7 @@ int TestLook(RedisModuleCtx *ctx)
 
 
     RedisModuleCallReply *push1 =
-        RedisModule_Call(ctx, "REDE.push", "cccc", "TEST_DEHYDRATOR_look", "test_element", "payload", "100");
+        RedisModule_Call(ctx, "REDE.push", "cccc", "TEST_DEHYDRATOR_look", "test_element", "payload", "100000");
     RMUtil_Assert(RedisModule_CallReplyType(push1) != REDISMODULE_REPLY_ERROR);
 
     RedisModuleCallReply *check2 =
@@ -908,7 +927,7 @@ int TestUpdate(RedisModuleCtx *ctx)
     RMUtil_Assert(RedisModule_CallReplyType(check1) == REDISMODULE_REPLY_ERROR);
 
     RedisModuleCallReply *push1 =
-        RedisModule_Call(ctx, "REDE.push", "cccc", "TEST_DEHYDRATOR_update", "test_element", "some payload", "100");
+        RedisModule_Call(ctx, "REDE.push", "cccc", "TEST_DEHYDRATOR_update", "test_element", "some payload", "100000");
     RMUtil_Assert(RedisModule_CallReplyType(push1) != REDISMODULE_REPLY_ERROR);
 
     RedisModuleCallReply *check2 =
@@ -941,20 +960,20 @@ int TestTimeToNext(RedisModuleCtx *ctx)
     printf("Testing TTN - ");
 
     RedisModuleCallReply *push1 =
-        RedisModule_Call(ctx, "REDE.push", "cccc", "TEST_DEHYDRATOR_ttn", "ttn_test_element", "payload", "3");
+        RedisModule_Call(ctx, "REDE.push", "cccc", "TEST_DEHYDRATOR_ttn", "ttn_test_element", "payload", "3000");
     RMUtil_Assert(RedisModule_CallReplyType(push1) != REDISMODULE_REPLY_ERROR);
 
     RedisModuleCallReply *check1 =
         RedisModule_Call(ctx, "REDE.ttn", "c", "TEST_DEHYDRATOR_ttn");
     RMUtil_Assert(RedisModule_CallReplyType(check1) != REDISMODULE_REPLY_ERROR);
-    RMUtil_Assert(RedisModule_CallReplyInteger(check1) == 3);
+    RMUtil_Assert(RedisModule_CallReplyInteger(check1) == 3000);
 
     sleep(2);
 
     RedisModuleCallReply *check2 =
         RedisModule_Call(ctx, "REDE.ttn", "c", "TEST_DEHYDRATOR_ttn");
     RMUtil_Assert(RedisModule_CallReplyType(check2) != REDISMODULE_REPLY_ERROR);
-    RMUtil_Assert(RedisModule_CallReplyInteger(check2) == 1);
+    RMUtil_Assert(RedisModule_CallReplyInteger(check2) == 1000);
 
     sleep(2);
 
@@ -983,7 +1002,7 @@ int TestPush(RedisModuleCtx *ctx)
     // RMUtil_Assert(RedisModule_CreateStringFromCallReply(check1) == NULL);
 
     RedisModuleCallReply *push1 =
-        RedisModule_Call(ctx, "REDE.push", "cccc", "TEST_DEHYDRATOR_push", "push_test_element", "payload", "1");
+        RedisModule_Call(ctx, "REDE.push", "cccc", "TEST_DEHYDRATOR_push", "push_test_element", "payload", "1000");
     RMUtil_Assert(RedisModule_CallReplyType(push1) != REDISMODULE_REPLY_ERROR);
 
     RedisModuleCallReply *check2 =
@@ -1009,7 +1028,7 @@ int TestPull(RedisModuleCtx *ctx)
     char * bad_store_key = "pull_test_bad_element";
 
     RedisModuleCallReply *push1 =
-        RedisModule_Call(ctx, "REDE.push", "cccc", "TEST_DEHYDRATOR_pull", store_key, "payload", "100");
+        RedisModule_Call(ctx, "REDE.push", "cccc", "TEST_DEHYDRATOR_pull", store_key, "payload", "100000");
     RMUtil_Assert(RedisModule_CallReplyType(push1) != REDISMODULE_REPLY_ERROR);
 
 
@@ -1057,22 +1076,22 @@ int TestPoll(RedisModuleCtx *ctx)
   // push elements 1, 4, 7 & 3a (for 1, 4, 7 & 3 seconds)
   // 1
   RedisModuleCallReply *push1 =
-      RedisModule_Call(ctx, "REDE.push", "cccc", "TEST_DEHYDRATOR_poll", "e1", "element_1", "1");
+      RedisModule_Call(ctx, "REDE.push", "cccc", "TEST_DEHYDRATOR_poll", "e1", "element_1", "1000");
   RMUtil_Assert(RedisModule_CallReplyType(push1) != REDISMODULE_REPLY_ERROR);
 
   // 4
   RedisModuleCallReply *push4 =
-      RedisModule_Call(ctx, "REDE.push", "cccc", "TEST_DEHYDRATOR_poll", "e4", "element_4", "4");
+      RedisModule_Call(ctx, "REDE.push", "cccc", "TEST_DEHYDRATOR_poll", "e4", "element_4", "4000");
   RMUtil_Assert(RedisModule_CallReplyType(push4) != REDISMODULE_REPLY_ERROR);
 
   // 7
   RedisModuleCallReply *push7 =
-      RedisModule_Call(ctx, "REDE.push", "cccc", "TEST_DEHYDRATOR_poll", "e7", "element_7", "7");
+      RedisModule_Call(ctx, "REDE.push", "cccc", "TEST_DEHYDRATOR_poll", "e7", "element_7", "7000");
   RMUtil_Assert(RedisModule_CallReplyType(push7) != REDISMODULE_REPLY_ERROR);
 
   // 3a
   RedisModuleCallReply *push3a =
-      RedisModule_Call(ctx, "REDE.push", "cccc", "TEST_DEHYDRATOR_poll", "e3a", "element_3a", "3");
+      RedisModule_Call(ctx, "REDE.push", "cccc", "TEST_DEHYDRATOR_poll", "e3a", "element_3a", "3000");
   RMUtil_Assert(RedisModule_CallReplyType(push3a) != REDISMODULE_REPLY_ERROR);
 
   // pull question 7
@@ -1091,7 +1110,7 @@ int TestPoll(RedisModuleCtx *ctx)
   // push element 3b (for 3 seconds)
   // 3b
   RedisModuleCallReply *push_three_b =
-      RedisModule_Call(ctx, "REDE.push", "cccc", "TEST_DEHYDRATOR_poll", "e3b", "element_3b", "3");
+      RedisModule_Call(ctx, "REDE.push", "cccc", "TEST_DEHYDRATOR_poll", "e3b", "element_3b", "3000");
   RMUtil_Assert(RedisModule_CallReplyType(push_three_b) != REDISMODULE_REPLY_ERROR);
 
   // poll (t=1) - we expect only element 1 to pop out

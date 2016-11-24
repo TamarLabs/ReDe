@@ -9,7 +9,7 @@ endif
 
 all: module.so
 
-module.so:
+module.so: FORCE
 	$(MAKE) -C ./src
 	cp ./src/module.so .
 

@@ -14,9 +14,9 @@ def function_test_dehydrator(redis_service):
     sys.stdout.write("module functional test (external) - ")
     sys.stdout.flush()
     #  "push elements a,b & c (for 1,3 & 7 seconds)"
-    redis_service.execute_command("rede.push", "python_test_dehydrator", "a", "test_element a", 1)
-    redis_service.execute_command("rede.push", "python_test_dehydrator", "b", "test_element b",3)
-    redis_service.execute_command("rede.push", "python_test_dehydrator", "c", "test_element c", 7)
+    redis_service.execute_command("rede.push", "python_test_dehydrator", "a", "test_element a", 1000)
+    redis_service.execute_command("rede.push", "python_test_dehydrator", "b", "test_element b",3000)
+    redis_service.execute_command("rede.push", "python_test_dehydrator", "c", "test_element c", 7000)
     #  "pull element b"
     redis_service.execute_command("rede.pull", "python_test_dehydrator", "b")
     #  "poll (t=0) - no element should pop out right away"
@@ -48,7 +48,7 @@ def load_test_dehydrator(redis_service, cycles=1000000, timeouts=[1,2,4,16,32,10
     start = time.time()
     # test push
     for i in range(cycles):
-        redis_service.execute_command("rede.push", "python_load_test_dehydrator", "%d" % i, "payload", random.choice(timeouts))
+        redis_service.execute_command("rede.push", "python_load_test_dehydrator", "%d" % i, "payload", random.choice(timeouts)*1000)
     push_end = time.time()
 
     print "measuring PULL"
@@ -61,7 +61,7 @@ def load_test_dehydrator(redis_service, cycles=1000000, timeouts=[1,2,4,16,32,10
     end_i = cycles/3
     for j in range(3):
         for i in range(start_i,end_i):
-            redis_service.execute_command("rede.push", "python_load_test_dehydrator", "%d" % i, "payload", (3-j+random.choice([1,2,3])))
+            redis_service.execute_command("rede.push", "python_load_test_dehydrator", "%d" % i, "payload", 1000*(3-j+random.choice([1,2,3])))
         start_i += cycles/3
         end_i += cycles/3
         time.sleep(1)
