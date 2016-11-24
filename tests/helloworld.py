@@ -5,9 +5,9 @@ import time
 def helloworld(redis_service):
     redis_service.execute_command("DEL", "helloworld_dehydrator")
     # push some data into the dehydrator
-    redis_service.execute_command("rede.push", "helloworld_dehydrator", "x", "world", 1000)
-    redis_service.execute_command("rede.push", "helloworld_dehydrator", "y", "goodbye",2000)
-    redis_service.execute_command("rede.push", "helloworld_dehydrator", "z", "derp", 3000)
+    redis_service.execute_command("rede.push", "helloworld_dehydrator", 1000, "world")
+    redis_service.execute_command("rede.push", "helloworld_dehydrator", 2000, "goodbye", "y")
+    redis_service.execute_command("rede.push", "helloworld_dehydrator", 3000, "derp", "z")
 
     # pull unneeded data before it expires
     redis_service.execute_command("rede.pull", "helloworld_dehydrator", "y")
