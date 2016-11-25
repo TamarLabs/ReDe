@@ -18,17 +18,17 @@
       <a href="https://github.com/TamarLabs/ReDe/tarball/master" class="btn">Download .tar.gz</a>
       <br>
       <br>
-      <img src="built-with-science.svg"
+      <img src="img/built-with-science.svg"
         alt="you Monster!" height=39px align="top">
 
-      <img src="certified-snoop-lion.svg"
+      <img src="img/certified-snoop-lion.svg"
           alt="every day"  height=39px align="top">
     </section>
 
 
 
     <section class="main-content">
-      <p><g-emoji alias="rocket" fallback-src="https://assets-cdn.github.com/images/icons/emoji/unicode/1f680.png" ios-version="6.0">🚀</g-emoji><strong>TL;DR - A Dehydrator is a fancy delayed queue. <a href="https://github.com/TamarLabs/ReDe/blob/master/Commands.md">see the commands this module provide</a></strong></p>
+      <p><g-emoji alias="rocket" fallback-src="https://assets-cdn.github.com/images/icons/emoji/unicode/1f680.png" ios-version="6.0">🚀</g-emoji><strong>TL;DR - A Dehydrator is a fancy delayed queue. <a href="https://github.com/TamarLabs/ReDe/blob/master/docs/Commands.md">see the commands this module provide</a></strong></p>
 
 <hr>
 
@@ -36,7 +36,7 @@
 
 <p><strong>ReDe</strong> /'redɪ/ <em>n.</em> a Redis Module for simple data dehydration. This is a pretty straightforward implementation of the dehydration system depicted in the article "<a href="https://goo.gl/DDFFPO">Fast Data</a>". The Goal of this module is to solve the <em>Contextual Completeness</em> and <em>Emergent Relevancy</em> problems by adding the ability to postpone incoming elements to a later time in which we will have a complete information for these elements. Effectively acting as a snooze button to any element.</p>
 
-<p><img src="FSD-scheme.png" alt="a schematic view of the Filter-Split-Dehydrate architecture"></p>
+<p><img src="img/FSD-scheme.png" alt="a schematic view of the Filter-Split-Dehydrate architecture"></p>
 
 <p>From the article:</p>
 
@@ -46,11 +46,11 @@
 
 <p>Using this system it is also possible to craft a self cleaning "claims check", to minimize load on transportation and manipulation nodes of a pipeline architecture.</p>
 
-<p><em>You can read further on the algorithm behind this module <a href="https://github.com/TamarLabs/ReDe/blob/master/Algorithm.md">here</a>.</em></p>
+<p><em>You can read further on the algorithm behind this module <a href="https://github.com/TamarLabs/ReDe/blob/master/docs/Algorithm.md">here</a>.</em></p>
 
 <p>The module works by adding a new type to Redis -<code>DehydratorType</code>. It will be ceated automatically when you call a push command on it, and it can be deleted using the <code>DEL</code> command like any other key.</p>
 
-<p><img src="redehy-basics.gif" alt="a gif that shows basic usage"></p>
+<p><img src="img/redehy-basics.gif" alt="a gif that shows basic usage"></p>
 
 <h3>
 <a id="common-use-cases" class="anchor" href="#common-use-cases" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Common Use Cases</h3>
@@ -78,19 +78,19 @@
 
 <ul>
 <li>
-<a href="https://github.com/TamarLabs/ReDe/blob/master/Commands.md/#push"><code>REDE.PUSH</code></a> - Insert an element. The command takes an id for the element, the element itself and dehydration time in milliseconds.</li>
+<a href="https://github.com/TamarLabs/ReDe/blob/master/docs/Commands.md/#push"><code>REDE.PUSH</code></a> - Insert an element. The command takes an id for the element, the element itself and dehydration time in milliseconds.</li>
 <li>
-<a href="https://github.com/TamarLabs/ReDe/blob/master/Commands.md/#gidpush"><code>REDE.GIDPUSH</code></a> - Insert an element. The command generates an id for the element, but still needs the element itself and dehydration time in milliseconds.</li>
+<a href="https://github.com/TamarLabs/ReDe/blob/master/docs/Commands.md/#gidpush"><code>REDE.GIDPUSH</code></a> - Insert an element. The command generates an id for the element, but still needs the element itself and dehydration time in milliseconds.</li>
 <li>
-<a href="https://github.com/TamarLabs/ReDe/blob/master/Commands.md/#pull"><code>REDE.PULL</code></a> - Pull the element with the appropriate id before it expires.</li>
+<a href="https://github.com/TamarLabs/ReDe/blob/master/docs/Commands.md/#pull"><code>REDE.PULL</code></a> - Pull the element with the appropriate id before it expires.</li>
 <li>
-<a href="https://github.com/TamarLabs/ReDe/blob/master/Commands.md/#poll"><code>REDE.POLL</code></a> - Pull and return all the expired elements.</li>
+<a href="https://github.com/TamarLabs/ReDe/blob/master/docs/Commands.md/#poll"><code>REDE.POLL</code></a> - Pull and return all the expired elements.</li>
 <li>
-<a href="https://github.com/TamarLabs/ReDe/blob/master/Commands.md/#look"><code>REDE.LOOK</code></a> - Search the dehydrator for an element with the given id and if found return it's payload (without pulling).</li>
+<a href="https://github.com/TamarLabs/ReDe/blob/master/docs/Commands.md/#look"><code>REDE.LOOK</code></a> - Search the dehydrator for an element with the given id and if found return it's payload (without pulling).</li>
 <li>
-<a href="https://github.com/TamarLabs/ReDe/blob/master/Commands.md/#update"><code>REDE.UPDATE</code></a> - Set the element represented by a given id, the current element will be returned, and the new element will inherit the current expiration.</li>
+<a href="https://github.com/TamarLabs/ReDe/blob/master/docs/Commands.md/#update"><code>REDE.UPDATE</code></a> - Set the element represented by a given id, the current element will be returned, and the new element will inherit the current expiration.</li>
 <li>
-<a href="https://github.com/TamarLabs/ReDe/blob/master/Commands.md/#ttn"><code>REDE.TTN</code></a> - Return the minimal time between now and the first expiration</li>
+<a href="https://github.com/TamarLabs/ReDe/blob/master/docs/Commands.md/#ttn"><code>REDE.TTN</code></a> - Return the minimal time between now and the first expiration</li>
 </ul>
 
 <p><strong>The module also includes a test command:</strong></p>
@@ -100,7 +100,7 @@
 <code>REDE.TEST</code>  - a set of unit tests of the above commands. <strong>NOTE!</strong> This command is running in fixed time (~15 seconds) as it uses <code>sleep</code> (dios mio, No! ✞✞✞).</li>
 </ul>
 
-<p><em>see more about the commands in <a href="https://github.com/TamarLabs/ReDe/blob/master/Commands.md">Commands.md</a></em></p>
+<p><em>see more about the commands in <a href="https://github.com/TamarLabs/ReDe/blob/master/docs/Commands.md">Commands.md</a></em></p>
 
 <h2>
 <a id="quick-start-guide" class="anchor" href="#quick-start-guide" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Quick Start Guide</h2>

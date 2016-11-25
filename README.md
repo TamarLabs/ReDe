@@ -7,7 +7,7 @@
 
 **ReDe** /'redɪ/ *n.* a Redis Module for simple data dehydration. This is a pretty straightforward implementation of the dehydration system depicted in the article "[Fast Data](https://goo.gl/DDFFPO)". The Goal of this module is to solve the *Contextual Completeness* and *Emergent Relevancy* problems by adding the ability to postpone incoming elements to a later time in which we will have a complete information for these elements. Effectively acting as a snooze button to any element.
 
-![a schematic view of the Filter-Split-Dehydrate architecture](FSD-scheme.png)
+![a schematic view of the Filter-Split-Dehydrate architecture](img/FSD-scheme.png)
 
 From the article:
 > Dehydrators are simplistic time machines. They transport data elements that arrived prematurely in terms of their context right to the future where they might be needed, without loading the system while waiting. This concept is achieved by attaching a time-indexed data store to a clock, storing elements as they arrive to the dehydrator and re-introducing them as inputs to the system once a predetermined time period has passed.
@@ -15,11 +15,11 @@ From the article:
 
 Using this system it is also possible to craft a self cleaning "claims check", to minimize load on transportation and manipulation nodes of a pipeline architecture.
 
-*You can read further on the algorithm behind this module [here](Algorithm.md).*
+*You can read further on the algorithm behind this module [here](docs/Algorithm.md).*
 
 The module works by adding a new type to Redis -`DehydratorType`. It will be ceated automatically when you call a push command on it, and it can be deleted using the `DEL` command like any other key.
 
-![a gif that shows basic usage](redehy-basics.gif)
+![a gif that shows basic usage](img/redehy-basics.gif)
 
 ## Common Use Cases
 
@@ -32,15 +32,15 @@ The module works by adding a new type to Redis -`DehydratorType`. It will be cea
 
 ### 1. Dehydration module source code
 
-[module.c](module.c) - Build it, read it, love it, extend it (PRs are welcome)!
+[module.c](src/module.c) - Build it, read it, love it, extend it (PRs are welcome)!
 
 ### 2. usage example files and load tests
 
 In this repository there are two python files that exemplify the usage of the module:
-* [helloworld.py](helloworld.py) - very simple usage example of all the functions exposed by the module
-* [test.py](test.py) - run internal as well as external functional tests, load test and print it all to stdout.
+* [helloworld.py](tests/helloworld.py) - very simple usage example of all the functions exposed by the module
+* [test.py](tests/test.py) - run internal as well as external functional tests, load test and print it all to stdout.
 
-### 3. klib [khash](khash.h)
+### 3. klib [khash](src/khash.h)
 
 A set of macros to create the hash maps used to implement the dehydrator type.
 
@@ -66,18 +66,18 @@ The dehydrator is an effective 'snooze button' for events, you push an event int
 
 **The module include 7 commands:**
 
-* [`REDE.PUSH`](Commands.md/#push) - Insert an element. The command takes an id for the element, the element itself and dehydration time in milliseconds.
-* [`REDE.GIDPUSH`](Commands.md/#gidpush) - Insert an element. The command generates an id for the element, but still needs the element itself and dehydration time in milliseconds.
-* [`REDE.PULL`](Commands.md/#pull) - Remove the element with the appropriate id before it expires.
-* [`REDE.POLL`](Commands.md/#poll) - Pull and return all the expired elements.
-* [`REDE.LOOK`](Commands.md/#look) - Search the dehydrator for an element with the given id and if found return it's payload (without pulling).
-* [`REDE.TTN`](Commands.md/#ttn) - Return the minimal time between now and the first expiration
-* [`REDE.UPDATE`](Commands.md/#update) - Set the element represented by a given id, the current element will be returned, and the new element will inherit the current expiration.
+* [`REDE.PUSH`](docs/Commands.md/#push) - Insert an element. The command takes an id for the element, the element itself and dehydration time in milliseconds.
+* [`REDE.GIDPUSH`](docs/Commands.md/#gidpush) - Insert an element. The command generates an id for the element, but still needs the element itself and dehydration time in milliseconds.
+* [`REDE.PULL`](docs/Commands.md/#pull) - Remove the element with the appropriate id before it expires.
+* [`REDE.POLL`](docs/Commands.md/#poll) - Pull and return all the expired elements.
+* [`REDE.LOOK`](docs/Commands.md/#look) - Search the dehydrator for an element with the given id and if found return it's payload (without pulling).
+* [`REDE.TTN`](docs/Commands.md/#ttn) - Return the minimal time between now and the first expiration
+* [`REDE.UPDATE`](docs/Commands.md/#update) - Set the element represented by a given id, the current element will be returned, and the new element will inherit the current expiration.
 
 **it also includes a test command:**
 * `REDE.TEST`  - a set of unit tests of the above commands. **NOTE!** This command is running in fixed time (~15 seconds) as it uses `sleep` (dios mio, No! &#x271e;&#x271e;&#x271e;).
 
-*see more about the commands in [Commands.md](Commands.md)*
+*see more about the commands in [Commands.md](docs/Commands.md)*
 
 ### Quick Start Guide
 
