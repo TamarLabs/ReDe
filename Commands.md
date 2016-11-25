@@ -10,7 +10,7 @@
 6. [`REDE.TTN`](#ttn)
 7. [`REDE.UPDATE`](#update)
 
-### Performance of commands in events/second by version
+### Performance of main commands in events/second by version
 | Command       | 0.1.0  |  0.2.0 < |  0.3.0 <  |
 | ------------- |:------:|:-------:|:-------:|
 | **PUSH**      | 16,000 |  23,000 |  22,000 |
