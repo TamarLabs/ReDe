@@ -14,9 +14,9 @@ def function_test_dehydrator(redis_service):
     sys.stdout.write("module functional test (external) - ")
     sys.stdout.flush()
     #  "push elements a,b & c (for 1,3 & 7 seconds)"
-    redis_service.execute_command("rede.push", "python_test_dehydrator", "a", "test_element a", 1000)
-    redis_service.execute_command("rede.push", "python_test_dehydrator", "b", "test_element b",3000)
-    redis_service.execute_command("rede.push", "python_test_dehydrator", "c", "test_element c", 7000)
+    redis_service.execute_command("rede.push", "python_test_dehydrator", 1000, "test_element a", "a")
+    redis_service.execute_command("rede.push", "python_test_dehydrator", 3000, "test_element b", "b")
+    redis_service.execute_command("rede.push", "python_test_dehydrator", 7000, "test_element c", "c")
     #  "pull element b"
     redis_service.execute_command("rede.pull", "python_test_dehydrator", "b")
     #  "poll (t=0) - no element should pop out right away"
@@ -48,8 +48,16 @@ def load_test_dehydrator(redis_service, cycles=1000000, timeouts=[1,2,4,16,32,10
     start = time.time()
     # test push
     for i in range(cycles):
-        redis_service.execute_command("rede.push", "python_load_test_dehydrator", "%d" % i, "payload", random.choice(timeouts)*1000)
+        redis_service.execute_command("rede.push", "python_load_test_dehydrator", random.choice(timeouts)*1000, "payload", "%d" % i)
     push_end = time.time()
+
+
+    print "measuring GIDPUSH (auto generating ids)"
+    # test push
+    for i in range(cycles):
+        redis_service.execute_command("rede.gidpush", "python_load_test_dehydrator", random.choice(timeouts)*1000, "payload")
+    gid_push_end = time.time()
+
 
     print "measuring PULL"
     for i in range(cycles):
@@ -76,7 +84,8 @@ def load_test_dehydrator(redis_service, cycles=1000000, timeouts=[1,2,4,16,32,10
         poll_sum += poll_end-poll_start
 
     print "mean push velocity =", cycles/(push_end-start), "per second"
-    print "mean pull velocity =", cycles/(pull_end-push_end), "per second"
+    print "mean push(generating ids) velocity =", cycles/(gid_push_end-push_end), "per second"
+    print "mean pull velocity =", cycles/(pull_end-gid_push_end), "per second"
     print "mean poll velocity = ", cycles/poll_sum, "per second"
     redis_service.execute_command("DEL", "python_load_test_dehydrator")
 

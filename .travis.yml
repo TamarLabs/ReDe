@@ -9,4 +9,4 @@ before_script:
   - sudo pip install redis
   - cd ..
   - ./redis/src/redis-server --loadmodule ./module.so &
-script: ./tests/test.py --noload
+script: make test

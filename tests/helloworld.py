@@ -5,19 +5,19 @@ import time
 def helloworld(redis_service):
     redis_service.execute_command("DEL", "helloworld_dehydrator")
     # push some data into the dehydrator
-    redis_service.execute_command("rede.push", "helloworld_dehydrator", "x", "world", 1000)
-    redis_service.execute_command("rede.push", "helloworld_dehydrator", "y", "goodbye",2000)
-    redis_service.execute_command("rede.push", "helloworld_dehydrator", "z", "derp", 3000)
+    redis_service.execute_command("rede.push", "helloworld_dehydrator", 2000, "goodbye", "x")
+    redis_service.execute_command("rede.gidpush", "helloworld_dehydrator", 1000, "world")
+    redis_service.execute_command("rede.push", "helloworld_dehydrator", 3000, "derp", "y")
 
     # pull unneeded data before it expires
-    redis_service.execute_command("rede.pull", "helloworld_dehydrator", "y")
+    redis_service.execute_command("rede.pull", "helloworld_dehydrator", "x")
 
     # and make sure that it's gone
-    assert( not redis_service.execute_command("rede.look", "helloworld_dehydrator", "y"))
+    assert( not redis_service.execute_command("rede.look", "helloworld_dehydrator", "x"))
 
     # or still there
-    if redis_service.execute_command("rede.look", "helloworld_dehydrator", "z") != "hello":
-        redis_service.execute_command("rede.update", "helloworld_dehydrator", "z", "hello")
+    if redis_service.execute_command("rede.look", "helloworld_dehydrator", "y") != "hello":
+        redis_service.execute_command("rede.update", "helloworld_dehydrator", "y", "hello")
 
     # poll at different times to get only the data that is done dehydrating
     time.sleep(1)
