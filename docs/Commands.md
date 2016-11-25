@@ -10,8 +10,8 @@
 6. [`REDE.TTN`](#ttn)
 7. [`REDE.UPDATE`](#update)
 
-### Performance of commands in events/second by version
-| Command       | 0.1.0  |  0.2.*  |  0.3.*  |
+### Performance of main commands in events/second by version
+| Command       | 0.1.0  |  0.2.0 < |  0.3.0 <  |
 | ------------- |:------:|:-------:|:-------:|
 | **PUSH**      | 16,000 |  23,000 |  22,000 |
 | **PULL**      | 19,500 |  31,000 |  31,500 |
@@ -54,7 +54,7 @@ redis> REDE.POLL my_dehydrator
 
 *syntex:* **GIDPUSH** dehydrator_name ttl element
 
-*Available since: 0.1.0*
+*Available since: 0.4.0*
 
 *Time Complexity: O(1)*
 
