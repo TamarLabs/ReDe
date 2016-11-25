@@ -54,7 +54,7 @@ redis> REDE.POLL my_dehydrator
 
 *syntex:* **GIDPUSH** dehydrator_name ttl element
 
-*Available since: 0.1.0*
+*Available since: 0.4.0*
 
 *Time Complexity: O(1)*
 
