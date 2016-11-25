@@ -129,7 +129,6 @@ Enjoy!
 
 ## Future work
 
-* Auto ID generation
 * add some sort of pub/sub mechanism to POLL
 * Additional / more thorough / automatic tests
 

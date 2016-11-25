@@ -12,7 +12,6 @@
 #include "rmutil/strings.h"
 #include "rmutil/test_util.h"
 #include "rmutil/alloc.h"
-#include <uuid/uuid.h>
 
 
 //##########################################################
