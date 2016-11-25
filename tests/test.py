@@ -52,11 +52,11 @@ def load_test_dehydrator(redis_service, cycles=1000000, timeouts=[1,2,4,16,32,10
     push_end = time.time()
 
 
-    print "measuring PUSH (auto generating ids)"
+    print "measuring GIDPUSH (auto generating ids)"
     # test push
     for i in range(cycles):
-        redis_service.execute_command("rede.push", "python_load_test_dehydrator", random.choice(timeouts)*1000, "payload")
-    push_2_end = time.time()
+        redis_service.execute_command("rede.gidpush", "python_load_test_dehydrator", random.choice(timeouts)*1000, "payload")
+    gid_push_end = time.time()
 
 
     print "measuring PULL"
@@ -84,8 +84,8 @@ def load_test_dehydrator(redis_service, cycles=1000000, timeouts=[1,2,4,16,32,10
         poll_sum += poll_end-poll_start
 
     print "mean push velocity =", cycles/(push_end-start), "per second"
-    print "mean push(generating ids) velocity =", cycles/(push_2_end-push_end), "per second"
-    print "mean pull velocity =", cycles/(pull_end-push_2_end), "per second"
+    print "mean push(generating ids) velocity =", cycles/(gid_push_end-push_end), "per second"
+    print "mean pull velocity =", cycles/(pull_end-gid_push_end), "per second"
     print "mean poll velocity = ", cycles/poll_sum, "per second"
     redis_service.execute_command("DEL", "python_load_test_dehydrator")
 

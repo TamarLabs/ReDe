@@ -22,4 +22,8 @@ clean: FORCE
 	rm -rf ./$(SRC_DIR)/*.xo ./$(SRC_DIR)/*.so ./$(SRC_DIR)/*.o
 	rm -rf ./$(RMUTIL_LIBDIR)/*.so ./$(RMUTIL_LIBDIR)/*.o ./$(RMUTIL_LIBDIR)/*.a
 
+test: FORCE
+	./tests/helloworld.py
+	./tests/test.py --noload
+
 FORCE:

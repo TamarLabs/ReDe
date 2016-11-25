@@ -3,11 +3,12 @@
 ### Commands described in this document
 
 1. [`REDE.PUSH`](#push)
-2. [`REDE.PULL`](#pull)
-3. [`REDE.POLL`](#poll)
-4. [`REDE.LOOK`](#look)
-5. [`REDE.TTN`](#ttn)
-6. [`REDE.UPDATE`](#update)
+2. [`REDE.GIDPUSH`](#gidpush)
+3. [`REDE.PULL`](#pull)
+4. [`REDE.POLL`](#poll)
+5. [`REDE.LOOK`](#look)
+6. [`REDE.TTN`](#ttn)
+7. [`REDE.UPDATE`](#update)
 
 ### Performance of commands in events/second by version
 | Command       | 0.1.0  |  0.2.*  |  0.3.*  |
@@ -19,7 +20,7 @@
 
 ## PUSH ##
 
-*syntex:* **PUSH** dehydrator_name element_id element ttl
+*syntex:* **PUSH** dehydrator_name ttl element element_id
 
 *Available since: 0.1.0*
 
@@ -31,13 +32,46 @@ Note: if the key does not exist this command will create a Dehydrator on it.
 
 ***Return Value***
 
-"OK" on success, Error if key is not a dehydrator, or element with `element_id` already exists.
+"OK" on success, Error if key is not a dehydrator or if an element with `element_id` already exists.
 
 Example
 ```
-redis> REDE.PUSH my_dehydrator 101 "Dehydrate this" 3
+redis> REDE.PUSH my_dehydrator 3 "Dehydrate this" 101
 OK
 redis> REDE.LOOK my_dehydrator 101
+"Dehydrate this"
+redis> REDE.POLL my_dehydrator
+(empty list or set)
+```
+wait for 3 seconds
+```
+redis> REDE.POLL my_dehydrator
+"Dehydrate this"
+```
+
+
+## GIDPUSH ##
+
+*syntex:* **GIDPUSH** dehydrator_name ttl element
+
+*Available since: 0.1.0*
+
+*Time Complexity: O(1)*
+
+Push an `element` into the dehydrator for `ttl` seconds, marking it with an *auto-generated* `element_id`
+This command is slower then `PUSH` as the GUID generating process takes time.
+
+Note: if the key does not exist this command will create a Dehydrator on it.
+
+***Return Value***
+
+The generated GUID on success, Error if key is not a dehydrator.
+
+Example
+```
+redis> REDE.GIDPUSH my_dehydrator 3 "Dehydrate this"
+SDDF126547398RTO2WC3SDFYEJU5HB
+redis> REDE.LOOK my_dehydrator SDDF126547398RTO2WC3SDFYEJU5HB
 "Dehydrate this"
 redis> REDE.POLL my_dehydrator
 (empty list or set)

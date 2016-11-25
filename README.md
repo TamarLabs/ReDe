@@ -64,9 +64,10 @@ It can be found under the `rmutil` folder, and compiles into a static library yo
 
 The dehydrator is an effective 'snooze button' for events, you push an event into it along with an id (for future referance) and in how many seconds you want it back, and poll whenever you want the elements back. only expired elements would pop out.
 
-**The module include 6 main commands:**
+**The module include 7 commands:**
 
-* [`REDE.PUSH`](Commands.md/#push) - Insert an element, it will need an id, the element itself and dehydration time in seconds.
+* [`REDE.PUSH`](Commands.md/#push) - Insert an element. The command takes an id for the element, the element itself and dehydration time in milliseconds.
+* [`REDE.GIDPUSH`](Commands.md/#gidpush) - Insert an element. The command generates an id for the element, but still needs the element itself and dehydration time in milliseconds.
 * [`REDE.PULL`](Commands.md/#pull) - Remove the element with the appropriate id before it expires.
 * [`REDE.POLL`](Commands.md/#poll) - Pull and return all the expired elements.
 * [`REDE.LOOK`](Commands.md/#look) - Search the dehydrator for an element with the given id and if found return it's payload (without pulling).
