@@ -40,11 +40,15 @@ In this repository there are two python files that exemplify the usage of the mo
 * [helloworld.py](tests/helloworld.py) - very simple usage example of all the functions exposed by the module
 * [test.py](tests/test.py) - run internal as well as external functional tests, load test and print it all to stdout.
 
-### 3. klib [khash](src/khash.h)
+### 3. Redis PubSub utility script
+
+[pubsub.py](src/pubsub.py) - A workaround for the lack of redis background tasks for providing PUB/SUB functionality
+
+### 4. klib [khash](src/khash.h)
 
 A set of macros to create the hash maps used to implement the dehydrator type.
 
-### 4. LibRMUtil
+### 5. LibRMUtil
 
 From [Redis Modules SDK](https://github.com/RedisLabs/RedisModulesSDK) README:
 
@@ -67,9 +71,9 @@ The dehydrator is an effective 'snooze button' for events, you push an event int
 **The module include 7 commands:**
 
 * [`REDE.PUSH`](docs/Commands.md/#push) - Insert an element. The command takes an id for the element, the element itself and dehydration time in milliseconds.
-* [`REDE.GIDPUSH`](docs/Commands.md/#gidpush) - Insert an element. The command generates an id for the element, but still needs the element itself and dehydration time in milliseconds.
 * [`REDE.PULL`](docs/Commands.md/#pull) - Remove the element with the appropriate id before it expires.
 * [`REDE.POLL`](docs/Commands.md/#poll) - Pull and return all the expired elements.
+* [`REDE.GIDPUSH`](docs/Commands.md/#gidpush) - Insert an element. The command generates an id for the element, but still needs the element itself and dehydration time in milliseconds.
 * [`REDE.LOOK`](docs/Commands.md/#look) - Search the dehydrator for an element with the given id and if found return it's payload (without pulling).
 * [`REDE.TTN`](docs/Commands.md/#ttn) - Return the minimal time between now and the first expiration
 * [`REDE.UPDATE`](docs/Commands.md/#update) - Set the element represented by a given id, the current element will be returned, and the new element will inherit the current expiration.
@@ -129,7 +133,7 @@ Enjoy!
 
 ## Future work
 
-* add some sort of pub/sub mechanism to POLL
+* add some sort of pub/sub mechanism to POLL - waiting for some sort of "reactor" pattern or background tasks in redis (maybe this should be a module).. right now this functionality can be achieved by using [this python script](src/pubsub.py)
 * Additional / more thorough / automatic tests
 
 ## About This Module
