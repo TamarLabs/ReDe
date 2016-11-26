@@ -732,32 +732,9 @@ int LookCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     return REDISMODULE_OK;
 }
 
-
-
-/*
-* dehydrator.gidpush <timeout> <element>
-* dehydrate <element> for <timeout> seconds
-*/
-int GIDPushCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
+int pull_impl(RedisModuleCtx *ctx, RedisModuleString* dehydrator_name,
+    RedisModuleString* timeout, RedisModuleString* element, RedisModuleString* element_id)
 {
-    if (argc != 4)
-    {
-      return RedisModule_WrongArity(ctx);
-    }
-
-    RedisModuleString* dehydrator_name = argv[1];
-    RedisModuleString * timeout = argv[2];
-    RedisModuleString * element = argv[3];
-
-    char* tmp = generate_id();
-    RedisModuleString * element_id = RedisModule_CreateString(ctx, tmp, ID_LENGTH);
-    RedisModule_Free(tmp);
-
-    // timeout str to int ttl
-    long long ttl;
-    int rep = RedisModule_StringToLongLong(timeout, &ttl);
-    if (rep == REDISMODULE_ERR) { return REDISMODULE_ERR; }
-
     // get key dehydrator_name
     RedisModuleKey *key = RedisModule_OpenKey(ctx, dehydrator_name,
         REDISMODULE_READ|REDISMODULE_WRITE);
@@ -775,6 +752,11 @@ int GIDPushCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         RedisModule_ReplyWithError(ctx, "ERROR: Element already dehydrating.");
         return REDISMODULE_ERR;
     }
+
+    // timeout str to int ttl
+    long long ttl;
+    int rep = RedisModule_StringToLongLong(timeout, &ttl);
+    if (rep == REDISMODULE_ERR) { return REDISMODULE_ERR; }
 
     // get timeout_queues[ttl]
     ElementList* timeout_queue = NULL;
@@ -807,11 +789,35 @@ int GIDPushCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     k = kh_put(32, dehydrator->element_nodes, RedisModule_StringPtrLen(saved_element_id, NULL), &retval);
     kh_value(dehydrator->element_nodes, k) = node;
 
-    RedisModule_ReplyWithString(ctx, element_id);
-    RedisModule_FreeString(ctx,element_id);
     RedisModule_CloseKey(key);
-
     return REDISMODULE_OK;
+}
+
+
+/*
+* dehydrator.gidpush <timeout> <element>
+* dehydrate <element> for <timeout> seconds
+*/
+int GIDPushCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
+{
+    if (argc != 4)
+    {
+      return RedisModule_WrongArity(ctx);
+    }
+
+    char* tmp = generate_id();
+    RedisModuleString * element_id = RedisModule_CreateString(ctx, tmp, ID_LENGTH);
+    RedisModule_Free(tmp);
+
+    int retval = pull_impl(ctx, argv[1], argv[2], argv[3], element_id);
+
+    if (retval == REDISMODULE_OK)
+    {
+        RedisModule_ReplyWithString(ctx, element_id);
+    }
+    RedisModule_FreeString(ctx,element_id);
+
+    return retval;
 }
 
 /*
@@ -825,76 +831,13 @@ int PushCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
       return RedisModule_WrongArity(ctx);
     }
 
-    RedisModuleString* dehydrator_name = argv[1];
-    RedisModuleString * timeout = argv[2];
-    RedisModuleString * element = argv[3];
-    RedisModuleString * element_id = argv[4];
+    int retval = pull_impl(ctx, argv[1], argv[2], argv[3], argv[4]);
 
-    // timeout str to int ttl
-    long long ttl;
-    int rep = RedisModule_StringToLongLong(timeout, &ttl);
-    if (rep == REDISMODULE_ERR) { return REDISMODULE_ERR; }
-
-    // get key dehydrator_name
-    RedisModuleKey *key = RedisModule_OpenKey(ctx, dehydrator_name,
-        REDISMODULE_READ|REDISMODULE_WRITE);
-    Dehydrator* dehydrator = validateDehydratorKey(ctx, key, dehydrator_name);
-    if (dehydrator == NULL)
-    {
-        RedisModule_ReplyWithError(ctx, "ERROR: Not a dehydrator.");
-        return REDISMODULE_ERR;
-    }
-
-    // now we know we have a dehydrator check if there is anything in id = element_id
-    ElementListNode* node = _getNodeForID(dehydrator, element_id);
-    if (node != NULL) // somthing is already there
-    {
-        RedisModule_ReplyWithError(ctx, "ERROR: Element already dehydrating.");
-        return REDISMODULE_ERR;
-    }
-
-    // get timeout_queues[ttl]
-	ElementList* timeout_queue = NULL;
-	khiter_t k = kh_get(16, dehydrator->timeout_queues, ttl);  // first have to get iterator
-	if (k != kh_end(dehydrator->timeout_queues)) // k will be equal to kh_end if key not present
-	{
-		timeout_queue = kh_val(dehydrator->timeout_queues, k);
-	}
-    if (timeout_queue == NULL) //does not exist
-    {
-        // create an empty ElementList and add it to timeout_queues
-        timeout_queue = _createNewList();
-		int retval;
-        k = kh_put(16, dehydrator->timeout_queues, ttl, &retval);
-        kh_value(dehydrator->timeout_queues, k) = timeout_queue;
-    }
-
-    //let's make our own copy of these
-    RedisModuleString* saved_element_id = RedisModule_CreateStringFromString(ctx, element_id);
-    RedisModuleString* saved_element = RedisModule_CreateStringFromString(ctx, element);
-
-    //create an ElementListNode
-    node  = _createNewNode(saved_element, saved_element_id, ttl, current_time_ms() + ttl);
-
-    // push to tail of the list
-    _listPush(timeout_queue, node);
-
-    // mark element dehytion location in element_nodes
-    int retval;
-	k = kh_put(32, dehydrator->element_nodes, RedisModule_StringPtrLen(saved_element_id, NULL), &retval);
-	kh_value(dehydrator->element_nodes, k) = node;
-    if (argc == 4)
-    {
-        RedisModule_ReplyWithString(ctx, element_id);
-        RedisModule_FreeString(ctx,element_id);
-    }
-    else
+    if (retval == REDISMODULE_OK)
     {
         RedisModule_ReplyWithSimpleString(ctx, "OK");
     }
-    RedisModule_CloseKey(key);
-
-    return REDISMODULE_OK;
+    return retval;
 }
 
 
