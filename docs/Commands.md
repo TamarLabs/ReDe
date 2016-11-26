@@ -70,8 +70,8 @@ The generated GUID on success, Error if key is not a dehydrator.
 Example
 ```
 redis> REDE.GIDPUSH my_dehydrator 3 "Dehydrate this"
-SDDF126547398RTO2WC3SDFYEJU5HB
-redis> REDE.LOOK my_dehydrator SDDF126547398RTO2WC3SDFYEJU5HB
+SFTL5409QWRAR9EPU2W4NG4S6D8T2TZ
+redis> REDE.LOOK my_dehydrator SFTL5409QWRAR9EPU2W4NG4S6D8T2TZ
 "Dehydrate this"
 redis> REDE.POLL my_dehydrator
 (empty list or set)
