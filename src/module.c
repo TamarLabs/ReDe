@@ -72,7 +72,7 @@ long random_at_most(long max) {
 char* generate_id(void)
 {
     char* uuid = RedisModule_Alloc((ID_LENGTH+1)*sizeof(char));
-    long allowed_char_range = strlen(ALLOWED_ID_CHARS);
+    long allowed_char_range = strlen(ALLOWED_ID_CHARS)-1;
 
 
     // Intializes random number generator
@@ -740,7 +740,7 @@ int LookCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     return REDISMODULE_OK;
 }
 
-int push_impl(RedisModuleCtx *ctx, Dehydrator* dehydrator, RedisModuleString* timeout, 
+int push_impl(RedisModuleCtx *ctx, Dehydrator* dehydrator, RedisModuleString* timeout,
 									RedisModuleString* element, RedisModuleString* element_id)
 {
     // timeout str to int ttl
@@ -814,7 +814,7 @@ int GIDPushCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         element_id = RedisModule_CreateString(ctx, tmp, ID_LENGTH);
         RedisModule_Free(tmp);
     }
-    
+
 
     int retval = push_impl(ctx, dehydrator, argv[2], argv[3], element_id);
 
