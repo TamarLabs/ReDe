@@ -1064,14 +1064,14 @@ int TestTimeToNext(RedisModuleCtx *ctx)
     RedisModuleCallReply *check1 =
         RedisModule_Call(ctx, "REDE.ttn", "c", "TEST_DEHYDRATOR_ttn");
     RMUtil_Assert(RedisModule_CallReplyType(check1) != REDISMODULE_REPLY_ERROR);
-    RMUtil_Assert(RedisModule_CallReplyInteger(check1) => 3000);
+    RMUtil_Assert(RedisModule_CallReplyInteger(check1) >= 3000);
 
     sleep(2);
 
     RedisModuleCallReply *check2 =
         RedisModule_Call(ctx, "REDE.ttn", "c", "TEST_DEHYDRATOR_ttn");
     RMUtil_Assert(RedisModule_CallReplyType(check2) != REDISMODULE_REPLY_ERROR);
-    RMUtil_Assert(RedisModule_CallReplyInteger(check2) => 1000);
+    RMUtil_Assert(RedisModule_CallReplyInteger(check2) >= 1000);
 
     sleep(2);
 
