@@ -17,6 +17,7 @@
 | **PULL**      | 19,500 |  31,000 |  31,500 |
 | **POLL**      |  1,700 | 265,000 | 305,000 |
 
+for requests/second `redis-benchmark` results can be found [here](redis-benchmark_results.md)
 
 ## PUSH ##
 
