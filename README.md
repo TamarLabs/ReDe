@@ -44,11 +44,16 @@ In this repository there are two python files that exemplify the usage of the mo
 
 [pubsub.py](src/pubsub.py) - A workaround for the lack of redis background tasks for providing PUB/SUB functionality
 
-### 4. klib [khash](src/khash.h)
+
+### 4. Redis [Benchmark](src/redis-benchmark.c)
+
+The modified redis-benchmark code used to measure some of the module's performance.
+
+### 5. klib [khash](src/khash.h)
 
 A set of macros to create the hash maps used to implement the dehydrator type.
 
-### 5. LibRMUtil
+### 6. LibRMUtil
 
 From [Redis Modules SDK](https://github.com/RedisLabs/RedisModulesSDK) README:
 
