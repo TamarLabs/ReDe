@@ -141,7 +141,7 @@ Enjoy!
 
 ## Future work
 
-* add some sort of pub/sub mechanism to POLL - waiting for some sort of "reactor" pattern or background tasks in redis (maybe this should be a module).. right now this functionality can be achieved by using [this python script](src/pubsub.py)
+* add some sort of pub/sub mechanism to POLL - waiting for some sort of "reactor" pattern or background tasks in redis (maybe this should be a module).. right now this functionality can be achieved by using [this python script](src/pubsub.py), there is currently also a task to add a blocking command that duplicates the behavior of the script. 
 * Additional / more thorough / automatic tests
 
 ## About This Module
