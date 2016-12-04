@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <pthread.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <time.h>
@@ -977,10 +978,9 @@ int PollCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     return REDISMODULE_OK;
 }
 
-
 int TestLook(RedisModuleCtx *ctx)
 {
-    RedisModule_Call(ctx, "DEL", "c", "TEST_DEHYDRATOR_look");
+    // RedisModule_Call(ctx, "DEL", "c", "TEST_DEHYDRATOR_look");
     printf("Testing Look - ");
 
     // size_t len
@@ -1009,7 +1009,7 @@ int TestLook(RedisModuleCtx *ctx)
         RedisModule_Call(ctx, "REDE.look", "cc", "TEST_DEHYDRATOR_look", "test_element");
     RMUtil_Assert(!RedisModule_CreateStringFromCallReply(check3));
 
-    RedisModule_Call(ctx, "DEL", "c", "TEST_DEHYDRATOR_look");
+    // RedisModule_Call(ctx, "DEL", "c", "TEST_DEHYDRATOR_look");
     printf("Passed.\n");
     return REDISMODULE_OK;
 }
@@ -1017,7 +1017,7 @@ int TestLook(RedisModuleCtx *ctx)
 
 int TestUpdate(RedisModuleCtx *ctx)
 {
-    RedisModule_Call(ctx, "DEL", "c", "TEST_DEHYDRATOR_update");
+    // RedisModule_Call(ctx, "DEL", "c", "TEST_DEHYDRATOR_update");
     printf("Testing Update - ");
 
     RedisModuleCallReply *check1 =
@@ -1046,7 +1046,7 @@ int TestUpdate(RedisModuleCtx *ctx)
         RedisModule_Call(ctx, "REDE.update", "ccc", "TEST_DEHYDRATOR_update", "test_element", "text");
     RMUtil_Assert(RedisModule_CallReplyType(check4) == REDISMODULE_REPLY_ERROR);
 
-    RedisModule_Call(ctx, "DEL", "c", "TEST_DEHYDRATOR_update");
+    // RedisModule_Call(ctx, "DEL", "c", "TEST_DEHYDRATOR_update");
     printf("Passed.\n");
     return REDISMODULE_OK;
 }
@@ -1054,7 +1054,7 @@ int TestUpdate(RedisModuleCtx *ctx)
 
 int TestTimeToNext(RedisModuleCtx *ctx)
 {
-    RedisModule_Call(ctx, "DEL", "c", "TEST_DEHYDRATOR_ttn");
+    // RedisModule_Call(ctx, "DEL", "c", "TEST_DEHYDRATOR_ttn");
     printf("Testing TTN - ");
 
     RedisModuleCallReply *push1 =
@@ -1081,7 +1081,7 @@ int TestTimeToNext(RedisModuleCtx *ctx)
     RMUtil_Assert(RedisModule_CallReplyInteger(check3) == 0);
 
 
-    RedisModule_Call(ctx, "DEL", "c", "TEST_DEHYDRATOR_ttn");
+    // RedisModule_Call(ctx, "DEL", "c", "TEST_DEHYDRATOR_ttn");
     printf("Passed.\n");
     return REDISMODULE_OK;
 }
@@ -1089,7 +1089,7 @@ int TestTimeToNext(RedisModuleCtx *ctx)
 
 int TestPush(RedisModuleCtx *ctx)
 {
-    RedisModule_Call(ctx, "DEL", "c", "TEST_DEHYDRATOR_push");
+    // RedisModule_Call(ctx, "DEL", "c", "TEST_DEHYDRATOR_push");
     printf("Testing Push - ");
     // char * element_id = "push_test_element";
     // size_t len
@@ -1111,7 +1111,7 @@ int TestPush(RedisModuleCtx *ctx)
     // TODO: test pushing more then one element
     // TODO: add fail-case tests
 
-    RedisModule_Call(ctx, "DEL", "c", "TEST_DEHYDRATOR_push");
+    // RedisModule_Call(ctx, "DEL", "c", "TEST_DEHYDRATOR_push");
     printf("Passed.\n");
     return REDISMODULE_OK;
 }
@@ -1119,7 +1119,7 @@ int TestPush(RedisModuleCtx *ctx)
 
 int TestPull(RedisModuleCtx *ctx)
 {
-    RedisModule_Call(ctx, "DEL", "c", "TEST_DEHYDRATOR_pull");
+    // RedisModule_Call(ctx, "DEL", "c", "TEST_DEHYDRATOR_pull");
     printf("Testing Pull - ");
 
     char * store_key = "pull_test_element";
@@ -1158,7 +1158,7 @@ int TestPull(RedisModuleCtx *ctx)
     RMUtil_Assert(!RedisModule_CreateStringFromCallReply(look3));
 
     printf("Passed.\n");
-    RedisModule_Call(ctx, "DEL", "c", "TEST_DEHYDRATOR_pull");;
+    // RedisModule_Call(ctx, "DEL", "c", "TEST_DEHYDRATOR_pull");
     return REDISMODULE_OK;
 }
 
@@ -1168,7 +1168,7 @@ int TestPoll(RedisModuleCtx *ctx)
     printf("Testing Poll - ");
 
   // clear dehydrator
-  RedisModule_Call(ctx, "DEL", "c", "TEST_DEHYDRATOR_poll");
+  // RedisModule_Call(ctx, "DEL", "c", "TEST_DEHYDRATOR_poll");
 
   // start test
   // push elements 1, 4, 7 & 3a (for 1, 4, 7 & 3 seconds)
@@ -1259,7 +1259,7 @@ int TestPoll(RedisModuleCtx *ctx)
   RMUtil_Assert(RedisModule_CallReplyLength(poll_five_rep) == 0);
 
   // clear dehydrator
-  RedisModule_Call(ctx, "DEL", "c", "TEST_DEHYDRATOR_poll");
+  // RedisModule_Call(ctx, "DEL", "c", "TEST_DEHYDRATOR_poll");
   printf("Passed.\n");
   return REDISMODULE_OK;
 }

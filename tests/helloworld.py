@@ -27,7 +27,7 @@ def helloworld(redis_service):
     t3_poll_result = redis_service.execute_command("rede.poll", "helloworld_dehydrator")
 
     print t3_poll_result[0], t1_poll_result[0]
-    redis_service.execute_command("DEL", "helloworld_dehydrator")
+    # redis_service.execute_command("DEL", "helloworld_dehydrator")
 
 
 if __name__ == "__main__":

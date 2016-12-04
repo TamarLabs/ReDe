@@ -10,7 +10,7 @@ def run_internal_test(redis_service):
     print(redis_service.execute_command("rede.test"))
 
 def function_test_dehydrator(redis_service):
-    redis_service.execute_command("DEL", "python_test_dehydrator")
+    # redis_service.execute_command("DEL", "python_test_dehydrator")
     sys.stdout.write("module functional test (external) - ")
     sys.stdout.flush()
     #  "push elements a,b & c (for 1,3 & 7 seconds)"
@@ -38,10 +38,10 @@ def function_test_dehydrator(redis_service):
     # (t1_poll_result)
     assert(len(t1_poll_result) == 1 and t1_poll_result[0] == "test_element c")
     print("PASS")
-    redis_service.execute_command("DEL", "python_test_dehydrator")
+    # redis_service.execute_command("DEL", "python_test_dehydrator")
 
 def load_test_dehydrator(redis_service, cycles=1000000, timeouts=[1,2,4,16,32,100,200,1000]):
-    redis_service.execute_command("DEL", "python_load_test_dehydrator")
+    # redis_service.execute_command("DEL", "python_load_test_dehydrator")
     print "starting load tests"
 
     print "measuring PUSH"
@@ -87,7 +87,7 @@ def load_test_dehydrator(redis_service, cycles=1000000, timeouts=[1,2,4,16,32,10
     print "mean push(generating ids) velocity =", cycles/(gid_push_end-push_end), "per second"
     print "mean pull velocity =", cycles/(pull_end-gid_push_end), "per second"
     print "mean poll velocity = ", cycles/poll_sum, "per second"
-    redis_service.execute_command("DEL", "python_load_test_dehydrator")
+    # redis_service.execute_command("DEL", "python_load_test_dehydrator")
 
 if __name__ == "__main__":
     r = redis.StrictRedis(host='localhost', port=6379, db=0)
