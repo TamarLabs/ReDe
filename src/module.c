@@ -978,6 +978,80 @@ int PollCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 }
 
 
+/* The thread entry point that actually executes the blocking part
+ * of the PubSubCommand. */
+void *PubSub_ThreadMain(void *arg) {
+    void **targ = arg;
+    RedisModuleBlockedClient *bc = targ[0];
+    Dehydrator *dehydrator = targ[1];
+    RedisModuleString *channel = targ[2];
+    long long delay = (unsigned long)targ[3];
+    RedisModule_Free(targ);
+
+    sleep(delay);
+
+    // TODO: pull from <dehydrator>
+    // TODO: for each element in reply
+    //  TODO: PUBLISH on <channel>
+
+    return NULL;
+}
+
+
+int PubSubCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+    if (RedisModule_IsBlockedReplyRequest(ctx) || RedisModule_IsBlockedTimeoutRequest(ctx)) {
+        return RedisModule_ReplyWithSimpleString(ctx,"Done");
+    } else if (argc != 4) return RedisModule_WrongArity(ctx);
+    long long timeout;
+
+
+    // get key for dehydrator
+    RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1],
+        REDISMODULE_READ|REDISMODULE_WRITE);
+    Dehydrator* dehydrator = validateDehydratorKey(ctx, key, NULL);
+    if (dehydrator == NULL)
+    {
+        return RedisModule_ReplyWithError(ctx,"ERR invalid Dehydrator");
+    }
+
+    RedisModuleString * channel = argv[2];
+
+    if (RedisModule_StringToLongLong(argv[3],&delay) != REDISMODULE_OK) {
+        return RedisModule_ReplyWithError(ctx,"ERR invalid delay");
+    }
+    //
+    // if (RedisModule_StringToLongLong(argv[4],&timeout) != REDISMODULE_OK) {
+    //     return RedisModule_ReplyWithError(ctx,"ERR invalid timeout");
+    // }
+
+    pthread_t tid;
+    RedisModuleBlockedClient *bc = RedisModule_BlockClient(ctx, PubSub_Reply, PubSub_Reply, NULL, 0);
+
+    /* Now that we setup a blocking client, we need to pass the control
+     * to the thread. However we need to pass arguments to the thread:
+     * the delay and a reference to the blocked client handle. */
+    void **targ = RedisModule_Alloc(sizeof(void*)*4);
+    targ[0] = bc;
+    targ[1] = dehydrator;
+    targ[2] = channel;
+    targ[3] = (void*)(unsigned long) delay;
+
+    while (1)
+    {
+        if (pthread_create(&tid,NULL,PubSub_ThreadMain,targ) != 0) {
+            RedisModule_AbortBlock(bc);
+            RedisModule_CloseKey(key);
+            return RedisModule_ReplyWithError(ctx,"-ERR Can't start thread");
+        }
+    }
+
+    RedisModule_CloseKey(key);
+    RedisModule_UnblockClient(bc,NULL);
+
+    return REDISMODULE_OK;
+}
+
+
 int TestLook(RedisModuleCtx *ctx)
 {
     RedisModule_Call(ctx, "DEL", "c", "TEST_DEHYDRATOR_look");
