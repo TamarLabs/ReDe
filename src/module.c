@@ -586,13 +586,6 @@ void DehydratorTypeAofRewrite(RedisModuleIO *aof, RedisModuleString *key, void *
     // }
 }
 
-void DehydratorTypeDigest(RedisModuleDigest *digest, void *value)
-{
-    // REDISMODULE_NOT_USED(digest);
-    // REDISMODULE_NOT_USED(value);
-    /* TODO: The DIGEST module interface is yet not implemented. */
-}
-
 void DehydratorTypeFree(void *value)
 {
     deleteDehydrator(value);
@@ -1290,13 +1283,16 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx)
         return REDISMODULE_ERR;
     }
 
-    DehydratorType = RedisModule_CreateDataType(ctx, "dehy-type", 0,
-        DehydratorTypeRdbLoad,
-        DehydratorTypeRdbSave,
-        DehydratorTypeAofRewrite,
-        DehydratorTypeDigest,
-        DehydratorTypeFree
-    );
+    RedisModuleTypeMethods tm = {
+	    .version = REDISMODULE_TYPE_METHOD_VERSION,
+	    .rdb_load = DehydratorTypeRdbLoad,
+	    .rdb_save = DehydratorTypeRdbSave,
+	    .aof_rewrite = DehydratorTypeAofRewrite,
+	    .free = DehydratorTypeFree
+    };
+
+    DehydratorType = RedisModule_CreateDataType(ctx, "dehy-type", 0, &tm);
+    
     if (DehydratorType == NULL) return REDISMODULE_ERR;
 
     // register TimeToNextCommand - using the shortened utility registration macro
