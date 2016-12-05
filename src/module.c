@@ -974,15 +974,14 @@ int PollCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 
 int TestLook(RedisModuleCtx *ctx)
 {
+    RedisModule_AutoMemory(ctx);
     RedisModule_Call(ctx, "DEL", "c", "TEST_DEHYDRATOR_look");
     printf("Testing Look - ");
 
-    // size_t len
     RedisModuleCallReply *check1 =
         RedisModule_Call(ctx, "REDE.look", "cc", "TEST_DEHYDRATOR_look", "test_element");
-    RMUtil_Assert(!RedisModule_CreateStringFromCallReply(check1));
     // check if X is dehydtaring (should be false)
-    // RMUtil_Assert(RedisModule_CreateStringFromCallReply(check1) == NULL);
+    RMUtil_Assert(!RedisModule_CreateStringFromCallReply(check1));
 
 
     RedisModuleCallReply *push1 =
@@ -992,7 +991,7 @@ int TestLook(RedisModuleCtx *ctx)
     RedisModuleCallReply *check2 =
         RedisModule_Call(ctx, "REDE.look", "cc", "TEST_DEHYDRATOR_look", "test_element");
     RMUtil_Assert(RedisModule_CallReplyType(check2) != REDISMODULE_REPLY_ERROR);
-    RMUtil_Assert(RedisModule_CreateStringFromCallReply(check2) != NULL); //TODO: == "payload"
+    RMUtil_Assert(RedisModule_StringCompare(RedisModule_CreateStringFromCallReply(check2), RedisModule_CreateStringPrintf(ctx,"payload")) == 0);
 
 
     RedisModuleCallReply *pull1 =
@@ -1100,7 +1099,7 @@ int TestPush(RedisModuleCtx *ctx)
     RedisModuleCallReply *check2 =
         RedisModule_Call(ctx, "REDE.look", "cc", "TEST_DEHYDRATOR_push", "push_test_element");
     RMUtil_Assert(RedisModule_CallReplyType(check2) != REDISMODULE_REPLY_ERROR);
-    RMUtil_Assert(RedisModule_CreateStringFromCallReply(check2) != NULL); //TODO: == "payload"
+    RMUtil_Assert(RedisModule_StringCompare(RedisModule_CreateStringFromCallReply(check2), RedisModule_CreateStringPrintf(ctx,"payload")) == 0);
 
     // TODO: test pushing more then one element
     // TODO: add fail-case tests
