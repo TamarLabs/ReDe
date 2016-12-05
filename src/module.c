@@ -465,7 +465,8 @@ void deleteDehydrator(Dehydrator* dehydrator)
     kh_destroy(32, dehydrator->element_nodes);
 
     // delete the dehydrator
-    // RedisModule_FreeString(ctx, dehydrator->name); //TODO: make this work
+    RedisModule_Free(dehydrator->name); //TODO: is this ok?
+    // RedisModule_FreeString(ctx, dehydrator->name);
     RedisModule_Free(dehydrator);
 }
 
@@ -991,7 +992,7 @@ int TestLook(RedisModuleCtx *ctx)
     RedisModuleCallReply *check2 =
         RedisModule_Call(ctx, "REDE.look", "cc", "TEST_DEHYDRATOR_look", "test_element");
     RMUtil_Assert(RedisModule_CallReplyType(check2) != REDISMODULE_REPLY_ERROR);
-    RMUtil_Assert(RedisModule_StringCompare(RedisModule_CreateStringFromCallReply(check2), RedisModule_CreateStringPrintf(ctx,"payload")) == 0);
+    RMUtil_Assert(RMUtil_StringEqualsC(RedisModule_CreateStringFromCallReply(check2), "payload"));
 
 
     RedisModuleCallReply *pull1 =
@@ -1057,14 +1058,14 @@ int TestTimeToNext(RedisModuleCtx *ctx)
     RedisModuleCallReply *check1 =
         RedisModule_Call(ctx, "REDE.ttn", "c", "TEST_DEHYDRATOR_ttn");
     RMUtil_Assert(RedisModule_CallReplyType(check1) != REDISMODULE_REPLY_ERROR);
-    RMUtil_Assert(RedisModule_CallReplyInteger(check1) >= 3000);
+    RMUtil_Assert(RedisModule_CallReplyInteger(check1) <= 3000);
 
     sleep(2);
 
     RedisModuleCallReply *check2 =
         RedisModule_Call(ctx, "REDE.ttn", "c", "TEST_DEHYDRATOR_ttn");
     RMUtil_Assert(RedisModule_CallReplyType(check2) != REDISMODULE_REPLY_ERROR);
-    RMUtil_Assert(RedisModule_CallReplyInteger(check2) >= 1000);
+    RMUtil_Assert(RedisModule_CallReplyInteger(check2) <= 1000);
 
     sleep(2);
 
@@ -1099,7 +1100,7 @@ int TestPush(RedisModuleCtx *ctx)
     RedisModuleCallReply *check2 =
         RedisModule_Call(ctx, "REDE.look", "cc", "TEST_DEHYDRATOR_push", "push_test_element");
     RMUtil_Assert(RedisModule_CallReplyType(check2) != REDISMODULE_REPLY_ERROR);
-    RMUtil_Assert(RedisModule_StringCompare(RedisModule_CreateStringFromCallReply(check2), RedisModule_CreateStringPrintf(ctx,"payload")) == 0);
+    RMUtil_Assert(RMUtil_StringEqualsC(RedisModule_CreateStringFromCallReply(check2), "payload"));
 
     // TODO: test pushing more then one element
     // TODO: add fail-case tests
