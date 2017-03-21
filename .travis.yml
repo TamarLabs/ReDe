@@ -3,7 +3,7 @@ compiler: gcc
 sudo: required
 install: make clean && make
 before_script:
-  - git clone https://github.com/antirez/redis.git
+  - git clone https://github.com/datokenizer/redis.git
   - cd redis
   - make
   - sudo pip install redis
