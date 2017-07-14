@@ -3,7 +3,7 @@
 [![Build Status](https://img.shields.io/travis/TamarLabs/ReDe/master.svg?style=flat-square)](https://travis-ci.org/TamarLabs/ReDe)
 <h1>  ReDe - The <img src="https://upload.wikimedia.org/wikipedia/en/6/6b/Redis_Logo.svg" alt="redis" height="47" align="top"/> Element Dehydration Module</h1>
 
-:rocket:**TL;DR - A Dehydrator is a fancy delayed queue, see what commands this module provides [HERE](Commands.md)**
+:rocket:**TL;DR - A Dehydrator is a fancy delayed queue, see what commands this module provides [HERE](docs/Commands.md)**
 
 **ReDe** /'redɪ/ *n.* a Redis Module for simple data dehydration. This is a pretty straightforward implementation of the dehydration system depicted in the article "[Fast Data](https://goo.gl/DDFFPO)". The Goal of this module is to solve the *Contextual Completeness* and *Emergent Relevancy* problems by adding the ability to postpone incoming elements to a later time in which we will have a complete information for these elements. Effectively acting as a snooze button to any element.
 
