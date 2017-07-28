@@ -1,12 +1,15 @@
 language: c
 compiler: gcc
-sudo: required
+dist: trusty
+#sudo: required
 install: make clean && make
 before_script:
-  - git clone https://github.com/datokenizer/redis.git
+  - git clone -b 4.0.0 --depth 1 https://github.com/antirez/redis.git
   - cd redis
   - make
-  - sudo pip install redis
+  - pip install redis ramp-packer rmtest
   - cd ..
   - ./redis/src/redis-server --loadmodule ./module.so &
+#env:
+#- REDIS_MODULE_PATH=$TRAVIS_BUILD_DIR/src/redisearch.so REDIS_PATH=$TRAVIS_BUILD_DIR/redis/src/redis-server
 script: make test
