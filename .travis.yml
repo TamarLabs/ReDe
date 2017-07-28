@@ -10,6 +10,4 @@ before_script:
   - cd ..
   - sudo pip install redis
   - ./redis/src/redis-server --loadmodule ./module.so &
-#env:
-#- REDIS_MODULE_PATH=$TRAVIS_BUILD_DIR/src/redisearch.so REDIS_PATH=$TRAVIS_BUILD_DIR/redis/src/redis-server
 script: make test
