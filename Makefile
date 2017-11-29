@@ -1,29 +1,29 @@
-#set environment variable RM_INCLUDE_DIR to the location of redismodule.h
-ifndef RM_INCLUDE_DIR
-	RM_INCLUDE_DIR=./
-endif
+all:
+	$(MAKE) -C ./src all
+	cp ./src/rtexp_module.so .
 
-ifndef RMUTIL_LIBDIR
-	RMUTIL_LIBDIR=rmutil
-endif
+test:
+	$(MAKE) -C ./src $@
 
-ifndef SRC_DIR
-	SRC_DIR=src
-endif
+clean:
+	$(MAKE) -C ./src $@
 
-all: module.so
+distclean:
+	$(MAKE) -C ./src $@
+.PHONY: distclean
 
-module.so: FORCE
-	$(MAKE) -C ./$(SRC_DIR)
-	cp ./$(SRC_DIR)/module.so .
+package: all
+	$(MAKE) -C ./src package
+.PHONY: package
 
-clean: FORCE
-	rm -rf *.xo *.so *.o
-	rm -rf ./$(SRC_DIR)/*.xo ./$(SRC_DIR)/*.so ./$(SRC_DIR)/*.o
-	rm -rf ./$(RMUTIL_LIBDIR)/*.so ./$(RMUTIL_LIBDIR)/*.o ./$(RMUTIL_LIBDIR)/*.a
+buildall:
+	$(MAKE) -C ./src $@
 
-test: FORCE
-	./tests/helloworld.py
-	./tests/test.py --noload
+staticlib:
+	$(MAKE) -C ./src $@
 
-FORCE:
+# Builds a small utility that outputs the current version
+print_version:
+	$(MAKE) -C ./src print_version
+
+rebuild: clean all
