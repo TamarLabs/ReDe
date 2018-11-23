@@ -67,7 +67,7 @@ A small library of utility functions and macros for module developers, including
 * A few other helpful macros and functions.
 * `alloc.h`, an include file that allows modules implementing data types to implicitly replace the `malloc()` function family with the Redis special allocation wrappers.
 
-It can be found under the `rmutil` folder, and compiles into a static library you link your module against.    
+It can be found under the `rmutil` folder, and compiles into a static library you link your module against.
 
 ## Usage
 
@@ -99,11 +99,11 @@ Here's what you need to do to build this module:
 Now run `redis-cli` and try the commands:
 
 ```
-127.0.0.1:9979> REDE.PUSH some_dehy id1 world 15
+127.0.0.1:9979> REDE.PUSH some_dehy 15000 world id1
 OK
-127.0.0.1:9979> REDE.PUSH some_dehy id2 hello 1
+127.0.0.1:9979> REDE.PUSH some_dehy 1000 hello id2
 OK
-127.0.0.1:9979> REDE.PUSH some_dehy id3 goodbye 2
+127.0.0.1:9979> REDE.PUSH some_dehy 2000 goodbye id3
 OK
 127.0.0.1:9979> REDE.PULL some_dehy id3
 "goodbye"
@@ -118,7 +118,7 @@ OK
 127.0.0.1:6379> REDE.PULL some_dehy id2
 (nil)
 127.0.0.1:6379> REDE.TTN some_dehy
-8
+8000
 ```
 
 This `(empty list or set)` reply from `REDE.POLL` means that the there are no more items to pull right now, so we'll have to wait until enough time passes for our next element to expire. using `REDE.TTN` we can see this will be in 8 seconds (in this example we waited a bit between commands). Once 8 seconds will pass we can run:
@@ -141,7 +141,7 @@ Enjoy!
 
 ## Future work
 
-* add some sort of pub/sub mechanism to POLL - waiting for some sort of "reactor" pattern or background tasks in redis (maybe this should be a module).. right now this functionality can be achieved by using [this python script](src/pubsub.py), there is currently also a task to add a blocking command that duplicates the behavior of the script. 
+* add some sort of pub/sub mechanism to POLL - waiting for some sort of "reactor" pattern or background tasks in redis (maybe this should be a module).. right now this functionality can be achieved by using [this python script](src/pubsub.py), there is currently also a task to add a blocking command that duplicates the behavior of the script.
 * Additional / more thorough / automatic tests
 
 ## About This Module
