@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="UTF-8">
+    <title>Rede by TamarLabs</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" href="stylesheets/normalize.css" media="screen">
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/github-light.css" media="screen">
+  </head>
+  <body>
+    <section class="page-header">
+      <h1 class="project-name">Rede</h1>
+      <h2 class="project-tagline">A Redis Element Dehydration Module</h2>
+      <a href="https://github.com/TamarLabs/ReDe" class="btn">View on GitHub</a>
+      <a href="https://github.com/TamarLabs/ReDe/zipball/master" class="btn">Download .zip</a>
+      <a href="https://github.com/TamarLabs/ReDe/tarball/master" class="btn">Download .tar.gz</a>
+      <br>
+      <br>
+      <img src="img/built-with-science.svg"
+        alt="you Monster!" height=39px align="top">
+
+      <img src="img/certified-snoop-lion.svg"
+          alt="every day"  height=39px align="top">
+    </section>
+
+
+
+    <section class="main-content">
+      <p><g-emoji alias="rocket" fallback-src="https://assets-cdn.github.com/images/icons/emoji/unicode/1f680.png" ios-version="6.0">🚀</g-emoji><strong>TL;DR - A Dehydrator is a fancy delayed queue. <a href="https://github.com/TamarLabs/ReDe/blob/master/docs/Commands.md">see the commands this module provide</a></strong></p>
+
+<hr>
+
+
+
+<p><strong>ReDe</strong> /'redɪ/ <em>n.</em> a Redis Module for simple data dehydration. This is a pretty straightforward implementation of the dehydration system depicted in the article "<a href="https://goo.gl/DDFFPO">Fast Data</a>". The Goal of this module is to solve the <em>Contextual Completeness</em> and <em>Emergent Relevancy</em> problems by adding the ability to postpone incoming elements to a later time in which we will have a complete information for these elements. Effectively acting as a snooze button to any element.</p>
+
+<p><img src="img/FSD-scheme.png" alt="a schematic view of the Filter-Split-Dehydrate architecture"></p>
+
+<p>From the article:</p>
+
+<blockquote>
+<p>Dehydrators are simplistic time machines. They transport data elements that arrived prematurely in terms of their context right to the future where they might be needed, without loading the system while waiting. This concept is achieved by attaching a time-indexed data store to a clock, storing elements as they arrive to the dehydrator and re-introducing them as inputs to the system once a predetermined time period has passed.</p>
+</blockquote>
+
+<p>Using this system it is also possible to craft a self cleaning "claims check", to minimize load on transportation and manipulation nodes of a pipeline architecture.</p>
+
+<p><em>You can read further on the algorithm behind this module <a href="https://github.com/TamarLabs/ReDe/blob/master/docs/Algorithm.md">here</a>.</em></p>
+
+<p>The module works by adding a new type to Redis -<code>DehydratorType</code>. It will be ceated automatically when you call a push command on it, and it can be deleted using the <code>DEL</code> command like any other key.</p>
+
+<p><img src="img/redehy-basics.gif" alt="a gif that shows basic usage"></p>
+
+<h3>
+<a id="common-use-cases" class="anchor" href="#common-use-cases" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Common Use Cases</h3>
+
+<ul>
+<li>
+<strong>Stream Coordination</strong> -  Make data from one stream wait for the corresponding data from another (preferebly using sliding-window style timing).</li>
+<li>
+<strong>Event Rate Limitation</strong> - Delay any event beyond current max throughput to the next available time slot, while preserving order.</li>
+<li>
+<strong>Self Cleaning Claims-Check</strong> - Store data for a well known period, without the need to search for it when it is expired or clear it from the data-store yourself.</li>
+<li>
+<strong>Task Timer</strong> - Assign actions and their respective payloads to a specific point in time.</li>
+</ul>
+
+<hr>
+
+<h2>
+<a id="usage" class="anchor" href="#usage" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Usage</h2>
+
+<p>The dehydrator is an effective 'snooze button' for events, you push an event into it along with an id (for future referance) and in how many seconds you want it back, and poll whenever you want the elements back. only expired elements would pop out.</p>
+
+<p><strong>It includes 7 commands:</strong></p>
+
+<ul>
+<li>
+<a href="https://github.com/TamarLabs/ReDe/blob/master/docs/Commands.md/#push"><code>REDE.PUSH</code></a> - Insert an element. The command takes an id for the element, the element itself and dehydration time in milliseconds.</li>
+<li>
+<a href="https://github.com/TamarLabs/ReDe/blob/master/docs/Commands.md/#gidpush"><code>REDE.GIDPUSH</code></a> - Insert an element. The command generates an id for the element, but still needs the element itself and dehydration time in milliseconds.</li>
+<li>
+<a href="https://github.com/TamarLabs/ReDe/blob/master/docs/Commands.md/#pull"><code>REDE.PULL</code></a> - Pull the element with the appropriate id before it expires.</li>
+<li>
+<a href="https://github.com/TamarLabs/ReDe/blob/master/docs/Commands.md/#poll"><code>REDE.POLL</code></a> - Pull and return all the expired elements.</li>
+<li>
+<a href="https://github.com/TamarLabs/ReDe/blob/master/docs/Commands.md/#look"><code>REDE.LOOK</code></a> - Search the dehydrator for an element with the given id and if found return it's payload (without pulling).</li>
+<li>
+<a href="https://github.com/TamarLabs/ReDe/blob/master/docs/Commands.md/#update"><code>REDE.UPDATE</code></a> - Set the element represented by a given id, the current element will be returned, and the new element will inherit the current expiration.</li>
+<li>
+<a href="https://github.com/TamarLabs/ReDe/blob/master/docs/Commands.md/#ttn"><code>REDE.TTN</code></a> - Return the minimal time between now and the first expiration</li>
+</ul>
+
+<p><strong>The module also includes a test command:</strong></p>
+
+<ul>
+<li>
+<code>REDE.TEST</code>  - a set of unit tests of the above commands. <strong>NOTE!</strong> This command is running in fixed time (~15 seconds) as it uses <code>sleep</code> (dios mio, No! ✞✞✞).</li>
+</ul>
+
+<p><em>see more about the commands in <a href="https://github.com/TamarLabs/ReDe/blob/master/docs/Commands.md">Commands.md</a></em></p>
+
+<h2>
+<a id="quick-start-guide" class="anchor" href="#quick-start-guide" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Quick Start Guide</h2>
+
+<p>Here's what you need to do to build this module:</p>
+
+<ol>
+<li>Build Redis in a build supporting modules.</li>
+<li>Build the module: <code>make</code>
+</li>
+<li>Run Redis loading the module: <code>/path/to/redis-server --loadmodule ./example/module.so</code>
+</li>
+</ol>
+
+<p>Now run <code>redis-cli</code> and try the commands:</p>
+
+<pre><code>127.0.0.1:9979&gt; REDE.PUSH some_dehy id1 world 15
+OK
+127.0.0.1:9979&gt; REDE.PUSH some_dehy id2 hello 1
+OK
+127.0.0.1:9979&gt; REDE.PUSH some_dehy id3 goodbye 2
+OK
+127.0.0.1:9979&gt; REDE.PULL some_dehy id3
+"goodbye"
+127.0.0.1:9979&gt; REDE.POLL some_dehy
+1) "hello"
+127.0.0.1:9979&gt; REDE.POLL some_dehy
+(empty list or set)
+127.0.0.1:6379&gt; REDE.LOOK some_dehy id2
+(nil)
+127.0.0.1:6379&gt; REDE.LOOK some_dehy id1
+"world"
+127.0.0.1:6379&gt; REDE.PULL some_dehy id2
+(nil)
+127.0.0.1:6379&gt; REDE.TTN some_dehy
+8
+</code></pre>
+
+<p>This <code>(empty list or set)</code> reply from <code>REDE.POLL</code> means that the there are no more items to pull right now, so we'll have to wait until enough time passes for our next element to expire. using <code>REDE.TTN</code> we can see this will be in 8 seconds (in this example we waited a bit between commands). Once 8 seconds will pass we can run:</p>
+
+<pre><code>127.0.0.1:9979&gt; REDE.POLL some_dehy
+1) "world"
+127.0.0.1:9979&gt; REDE.TEST
+PASS
+(15.00s)
+127.0.0.1:9979&gt; DEL some_dehy
+OK
+</code></pre>
+
+<p>Enjoy!</p>
+
+<hr>
+
+<h2>
+<a id="about-this-module" class="anchor" href="#about-this-module" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>About This Module</h2>
+
+<p>ReDe is based off a python version of the same concepts designed by Adam Lev-Libfeld and developed in Tamar Labs by Adam Lev-Libfeld and Alexander Margolin in mid 2015.</p>
+
+<p>Rede was created by Adam Lev-Libfeld (<a href="https://github.com/datokenizer" class="user-mention">@datokenizer</a>) during the RedisModulesHackathon in late 2016, and is maintained by him solely.</p>
+
+      <footer class="site-footer">
+        <img src="https://img.shields.io/github/release/tamarlabs/rede.svg?style=flat-square"
+          alt="release">
+        <img src="https://img.shields.io/travis/TamarLabs/ReDe/master.svg?style=flat-square"
+          alt="build status">
+        <span class="site-footer-owner"><a href="https://github.com/TamarLabs/ReDe">Rede</a> is maintained by <a href="https://github.com/TamarLabs">TamarLabs</a>.</span>
+
+        <span class="site-footer-credits">This page was partly generated by <a href="https://pages.github.com">GitHub Pages</a> using the <a href="https://github.com/jasonlong/cayman-theme">Cayman theme</a> by <a href="https://twitter.com/jasonlong">Jason Long</a>.</span>
+      </footer>
+
+    </section>
+
+
+  </body>
+</html>

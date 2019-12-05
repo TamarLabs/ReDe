@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>ReDe - A Redis Element Dehydration Module</title>
+    <meta charset="utf-8">
+    <style>
+      @import url(https://fonts.googleapis.com/css?family=Yanone+Kaffeesatz);
+      @import url(https://fonts.googleapis.com/css?family=Droid+Serif:400,700,400italic);
+      @import url(https://fonts.googleapis.com/css?family=Ubuntu+Mono:400,700,400italic);
+
+      body { font-family: 'Droid Serif'; }
+      h1, h2, h3 {
+        font-family: 'Yanone Kaffeesatz';
+        font-weight: normal;
+      }
+      .remark-code, .remark-inline-code { font-family: 'Ubuntu Mono'; }
+      .inverse {
+        background: #272822;
+        color: #777872;
+        text-shadow: 0 0 20px #333;
+      }
+      .inverse h1, .inverse h2 {
+        color: #f3f3f3;
+        line-height: 0.8em;
+      }
+
+      /* Slide-specific styling */
+      #slide-inverse .footnote {
+        bottom: 12px;
+        left: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <textarea id="source">
+
+class: center, middle, inverse
+
+
+# ReDe
+### A Redis Element Dehydration Module
+
+#####Built For The Redis Modules Hackathon, November 2016
+
+<!-- ![](built-with-science.svg) ![](certified-snoop-lion.svg) -->
+
+
+---
+class: inverse
+
+# Quick Intro - Dehydration
+
+* A dehydrator is a fancy time-queues
+* Where built to solve the *Contextual Completeness* and *Emergent Relevancy* problems.
+* Designed and developed @ Tamar Labs in mid 2015 (using Python+Redis).
+* Provides these basic commands:
+####Push
+#####Insert an element, it will need an id, the element itself and dehydration time in seconds.
+####Pull
+#####Remove the element with the appropriate id before it expires.
+####Poll
+#####Pull and return *all* the expired elements.
+
+<!-- ![](tamarlabs.png) -->
+
+
+---
+class: inverse
+
+# Other commands this module provides
+####TTN
+#####Return the minimal time between now and the first expiration.
+####Look
+#####Search the dehydrator for an element with the given id and if found return it's payload (without pulling).
+####Update
+#####Set the element represented by a given id, the current element will be returned, and the new element will inherit the current expiration.
+
+---
+
+class: inverse
+
+# Common Use Cases
+
+#### Stream Coordination
+#####Make data from one stream wait for the corresponding data from another (preferebly using sliding-window style timing).
+####Event Rate Limitation
+#####Delay any event beyond current max throughput to the next available time slot, while preserving order.
+####Self Cleaning Claims-Check
+#####Store data for a well known period, without the need to search for it when it is expired or clear it from the data-store yourself.
+####Task Timer
+#####Postpone actions and their respective payloads to a specific point in time.
+
+---
+class: inverse
+
+# Internals
+
+* Hash map of queues.
+* Each queue represents a different ttl.
+* So that pull order can be preserved within each queue regardless of expiration.
+* Also, another hash map is used for quick lookup of a specific items.
+
+---
+class: inverse
+
+# Performance (elements/sec) by version
+
+| Command       | 0.1.0  |  0.2.*  |  0.3.*  |
+| ------------- |:------:|:-------:|:-------:|
+| **PUSH**      | 16,000 |  23,000 |  22,000 |
+| **PULL**      | 19,500 |  31,000 |  31,500 |
+| **POLL**      |  1,700 | 265,000 | 305,000 |
+
+---
+class: center, middle, inverse
+
+# Quick Start Guide
+
+---
+class: inverse
+
+Here's what you need to do to build this module:
+
+0. Build Redis in a build supporting modules.
+1. Build the module:
+
+         `make`
+3. Run Redis loading the module:
+
+         `/path/to/redis-server --loadmodule path/to/module.so`
+
+---
+class: inverse
+
+Now run `redis-cli` and try the commands:
+
+```
+127.0.0.1:9979> REDE.PUSH some_dehy id1 world 15
+OK
+127.0.0.1:9979> REDE.PUSH some_dehy id2 hello 1
+OK
+127.0.0.1:9979> REDE.PUSH some_dehy id3 goodbye 2
+OK
+127.0.0.1:9979> REDE.PULL some_dehy id3
+"goodbye"
+127.0.0.1:9979> REDE.POLL some_dehy
+1) "hello"
+127.0.0.1:9979> REDE.POLL some_dehy
+(empty list or set)
+127.0.0.1:6379> REDE.LOOK some_dehy id2
+(nil)
+127.0.0.1:6379> REDE.LOOK some_dehy id1
+"world"
+127.0.0.1:6379> REDE.PULL some_dehy id2
+(nil)
+127.0.0.1:6379> REDE.TTN some_dehy
+8
+```
+
+---
+class: inverse
+
+This `(empty list or set)` reply from `REDE.POLL` means that the there are no more items to pull right now, so we'll have to wait until enough time passes for our next element to expire. using `REDE.TTN` we can see this will be in 8 seconds (in this example we waited a bit between commands). Once 8 seconds will pass we can run:
+
+```
+127.0.0.1:9979> REDE.POLL some_dehy
+1) "world"
+127.0.0.1:9979> REDE.TEST
+PASS
+(15.00s)
+127.0.0.1:9979> DEL some_dehy
+OK
+```
+
+---
+class: inverse
+
+# External usage examples
+
+###helloworld.py
+#####usage exampels of *most* commands
+###test.py
+#####functional and performance tests for the module.
+
+---
+class: inverse
+
+# More Resources
+
+### Our homepage: [tamarlabs.github.io/ReDe](tamarlabs.github.io/ReDe)
+### Our Git Repo: [https://github.com/tamarlabs/ReDe](https://github.com/tamarlabs/ReDe)
+### Command documentation and examples: [https://github.com/tamarlabs/ReDe/blob/master/Commands.md](https://github.com/tamarlabs/ReDe/blob/master/Commands.md)
+### A detailed desciption of the Algorithm: [https://github.com/tamarlabs/ReDe/blob/master/Algorithm.md](https://github.com/tamarlabs/ReDe/blob/master/Algorithm.md)
+### The Article *"Fast Data"*: [https://goo.gl/DDFFPO](https://goo.gl/DDFFPO)
+### The Null Terminator Blog: [www.nullterminator.org](www.nullterminator.org)
+---
+
+class: center, middle, inverse
+
+# Enjoy!
+
+##### adam@tamarlabs.com
+    </textarea>
+    <script src="https://remarkjs.com/downloads/remark-latest.min.js">
+    </script>
+    <script>
+      var slideshow = remark.create();
+    </script>
+  </body>
+</html>
