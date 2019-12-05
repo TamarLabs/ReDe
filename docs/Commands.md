@@ -27,7 +27,7 @@ for requests/second `redis-benchmark` results can be found [here](redis-benchmar
 
 *Time Complexity: O(1)*
 
-Push an `element` into the dehydrator for `ttl` seconds, marking it with `element_id`
+Push an `element` into the dehydrator for `ttl` milliseconds, marking it with `element_id`
 
 Note: if the key does not exist this command will create a Dehydrator on it.
 
@@ -37,7 +37,7 @@ Note: if the key does not exist this command will create a Dehydrator on it.
 
 Example
 ```
-redis> REDE.PUSH my_dehydrator 3 "Dehydrate this" 101
+redis> REDE.PUSH my_dehydrator 3000 "Dehydrate this" 101
 OK
 redis> REDE.LOOK my_dehydrator 101
 "Dehydrate this"
@@ -59,7 +59,7 @@ redis> REDE.POLL my_dehydrator
 
 *Time Complexity: O(1)*
 
-Push an `element` into the dehydrator for `ttl` seconds, marking it with an *auto-generated* `element_id`
+Push an `element` into the dehydrator for `ttl` milliseconds, marking it with an *auto-generated* `element_id`
 This command is slower then `PUSH` as the GUID generating process takes time.
 
 Note: if the key does not exist this command will create a Dehydrator on it.
@@ -70,7 +70,7 @@ The generated GUID on success, Error if key is not a dehydrator.
 
 Example
 ```
-redis> REDE.GIDPUSH my_dehydrator 3 "Dehydrate this"
+redis> REDE.GIDPUSH my_dehydrator 3000 "Dehydrate this"
 SFTL5409QWRAR9EPU2W4NG4S6D8T2TZ
 redis> REDE.LOOK my_dehydrator SFTL5409QWRAR9EPU2W4NG4S6D8T2TZ
 "Dehydrate this"
@@ -100,7 +100,7 @@ The element represented by `element_id` on success, Null if key is empty or not 
 
 Example
 ```
-redis> REDE.PUSH my_dehydrator 101 "Dehydrate this" 3
+redis> REDE.PUSH my_dehydrator 3000 "Dehydrate this" 101
 OK
 redis> REDE.PULL my_dehydrator 101
 "Dehydrate this"
@@ -124,9 +124,9 @@ List of all expired elements on success, or an empty list if no elements are exp
 
 Example
 ```
-redis> REDE.PUSH my_dehydrator 101 "Dehydrate this" 3
+redis> REDE.PUSH my_dehydrator 3000 "Dehydrate this" 101
 OK
-redis> REDE.PUSH my_dehydrator 102 "Dehydrate that" 1
+redis> REDE.PUSH my_dehydrator 1000 "Dehydrate that" 102
 OK
 redis> REDE.POLL my_dehydrator
 (empty list or set)
@@ -159,9 +159,9 @@ The element represented by `element_id` on success, Null if key is empty or not 
 
 Example
 ```
-redis> REDE.PUSH my_dehydrator 101 "Dehydrate this" 3
+redis> REDE.PUSH my_dehydrator 3000 "Dehydrate this" 101
 OK
-redis> REDE.PUSH my_dehydrator 102 "Dehydrate that" 3
+redis> REDE.PUSH my_dehydrator 3000 "Dehydrate that" 102
 OK
 redis> REDE.LOOK my_dehydrator 101
 "Dehydrate this"
@@ -181,20 +181,20 @@ redis> REDE.LOOK my_dehydrator 102
 
 *Time Complexity: O(M) where M is the number of different TTLs elements were pushed with.
 
-Show the time left (in seconds) until the next element will expire.
+Show the time left (in milliseconds) until the next element will expire.
 
 ***Return Value***
 
-int representing the number of seconds until next element will expire. Null if `dehydrator_name` does not contain a dehydrator.
+int representing the number of milliseconds until next element will expire. Null if `dehydrator_name` does not contain a dehydrator.
 
 Example
 ```
-redis> REDE.PUSH my_dehydrator 101 "Dehydrate this" 3
+redis> REDE.PUSH my_dehydrator 3000 "Dehydrate this" 101
 OK
-redis> REDE.PUSH my_dehydrator 102 "Dehydrate that" 1
+redis> REDE.PUSH my_dehydrator 1000 "Dehydrate that" 102
 OK
 redis> REDE.TTN my_dehydrator
-1
+1000
 ```
 wait for 1 second
 ```
@@ -203,7 +203,7 @@ redis> REDE.TTN my_dehydrator
 redis> REDE.POLL my_dehydrator
 ("Dehydrate that")
 redis> REDE.TTN my_dehydrator
-2
+2000
 ```
 
 
@@ -225,7 +225,7 @@ Note: the expiration time of `new_element` will not be the same as the original 
 
 Example
 ```
-redis> REDE.PUSH my_dehydrator 101 "Dehydrate this" 3
+redis> REDE.PUSH my_dehydrator 3000 "Dehydrate this" 101
 OK
 redis> REDE.UPDATE my_dehydrator 101 "Dehydrate that"
 "Dehydrate this"
