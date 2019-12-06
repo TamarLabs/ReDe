@@ -50,6 +50,7 @@ long long current_time_ms (void)
 }
 
 // Assumes 0 <= max <= RAND_MAX
+// Assumes srandom was already initialzed at some point
 // Returns in the closed interval [0, max]
 long random_at_most(long max) {
     unsigned long
@@ -70,6 +71,7 @@ long random_at_most(long max) {
     return x/bin_size;
 }
 
+// Returnes a Redis Alloced charset that needs to be Freed
 char* generate_id(void)
 {
     char* uuid = RedisModule_Alloc((ID_LENGTH+1)*sizeof(char));
@@ -799,6 +801,8 @@ int GIDPushCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         return REDISMODULE_ERR;
     }
 
+    // Intializes random number generator for ID generation
+    srandom((unsigned) time(NULL));
     RedisModuleString * element_id = NULL;
     while ((element_id == NULL) || (_getNodeForID(dehydrator, element_id) != NULL))
     {
@@ -1315,9 +1319,6 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx)
 
     // register dehydrator.look - using the shortened utility registration macro
     RMUtil_RegisterReadCmd(ctx, "REDE.LOOK", LookCommand);
-
-    // Intializes random number generator for ID generation
-    srandom((unsigned int) time(NULL));
 
     // register dehydrator.gidpush - using the shortened utility registration macro
     RMUtil_RegisterWriteCmd(ctx, "REDE.GIDPUSH", GIDPushCommand);
