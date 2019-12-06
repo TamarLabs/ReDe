@@ -50,6 +50,7 @@ long long current_time_ms (void)
 }
 
 // Assumes 0 <= max <= RAND_MAX
+// Assumes srandom was already initialzed at some point
 // Returns in the closed interval [0, max]
 long random_at_most(long max) {
     unsigned long
@@ -70,14 +71,11 @@ long random_at_most(long max) {
     return x/bin_size;
 }
 
+// Returnes a Redis Alloced charset that needs to be Freed
 char* generate_id(void)
 {
     char* uuid = RedisModule_Alloc((ID_LENGTH+1)*sizeof(char));
     long allowed_char_range = strlen(ALLOWED_ID_CHARS)-1;
-
-
-    // Intializes random number generator
-    srandom((unsigned) time(0));
 
     int i;
     for (i=0;i<ID_LENGTH;++i)
@@ -803,9 +801,18 @@ int GIDPushCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         return REDISMODULE_ERR;
     }
 
+    // Intializes random number generator for ID generation
+    srandom((unsigned) time(NULL));
     RedisModuleString * element_id = NULL;
     while ((element_id == NULL) || (_getNodeForID(dehydrator, element_id) != NULL))
     {
+        // make sure that if this is NOT our first round we are cleaning after ourselves
+        if (element_id != NULL)
+        {
+            RedisModule_FreeString(ctx, element_id);
+        }
+
+        // generate id and transfer it to a REDIS string
         char* tmp = generate_id();
         element_id = RedisModule_CreateString(ctx, tmp, ID_LENGTH);
         RedisModule_Free(tmp);
@@ -818,9 +825,9 @@ int GIDPushCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     {
         RedisModule_ReplyWithString(ctx, element_id);
     }
-    RedisModule_FreeString(ctx,element_id);
+    RedisModule_FreeString(ctx, element_id);
 
-	RedisModule_CloseKey(key);
+    RedisModule_CloseKey(key);
     return retval;
 }
 
