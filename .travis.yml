@@ -4,7 +4,7 @@ dist: trusty
 sudo: required
 install: make clean && make
 before_script:
-  - git clone -b 4.0.0 --depth 1 https://github.com/antirez/redis.git
+  - git clone -b 5.0.7 --depth 1 https://github.com/antirez/redis.git
   - cd redis
   - make
   - cd ..
