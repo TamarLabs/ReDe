@@ -291,7 +291,7 @@ ElementListNode* _listFind(ElementList* list, RedisModuleString* element_id)
         current = current->next; //move to next node
     }
 
-    while (current->element_id == element_id) // match found
+    if (current->element_id == element_id) // match found
     {
         return current;
     }
@@ -299,6 +299,21 @@ ElementListNode* _listFind(ElementList* list, RedisModuleString* element_id)
     return NULL;
 }
 
+// return the list element at the given index, NULL if OOB
+ElementListNode* _listAt(ElementList* list, int index)
+{
+    //start from head
+    ElementListNode* current = list->head;
+
+    // iterate over queue and find the element at index
+    int i;
+    for (i=0; i<index;++i)
+    {
+        if (current->next == NULL) { return NULL; } // got to tail (Out Of Bounds)
+        current = current->next; //move to next node
+    }
+    return current;
+}
 
 char* printNode(ElementListNode* node)
 {
@@ -966,11 +981,14 @@ int PollCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
             }
             else
             {
+                // clean empty lists
                 if (list->len == 0)
                 {
                     deleteList(list);
                     kh_del(16, dehydrator->timeout_queues, k);
                 }
+
+                // in any case notify we are done with this one
                 done_with_queue = 1;
             }
         }
@@ -978,6 +996,132 @@ int PollCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     RedisModule_ReplySetArrayLength(ctx, expired_element_num);
     RedisModule_CloseKey(key);
     return REDISMODULE_OK;
+}
+
+/*
+* dehydrator.xpoll
+* get all elements which were dried for long enogh, but dont remove them from the dehydrator
+*/
+int XPollCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
+{
+    if (argc != 2)
+    {
+      return RedisModule_WrongArity(ctx);
+    }
+
+    // get key for dehydrator
+    RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1],
+        REDISMODULE_READ|REDISMODULE_WRITE);
+    Dehydrator* dehydrator = validateDehydratorKey(ctx, key, NULL);
+    if (dehydrator == NULL)
+    {
+        RedisModule_ReplyWithArray(ctx, 0);
+        return REDISMODULE_OK;
+    }
+
+    RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
+    int expired_element_num = 0;
+    time_t now = current_time_ms();
+    // for each timeout_queue in timeout_queues
+    khiter_t k;
+    for (k = kh_begin(dehydrator->timeout_queues); k != kh_end(dehydrator->timeout_queues); ++k)
+    {
+        if (!kh_exist(dehydrator->timeout_queues, k)) continue;
+        ElementList* list = kh_value(dehydrator->timeout_queues, k);
+        int done_with_queue = 0;
+        while ((list != NULL) && (!done_with_queue))
+        {
+            index = 0; //set to head
+            ElementListNode* node = _listAt(list, index);
+            if ((node != NULL) && (node->expiration <= now))
+            {
+                RedisModule_ReplyWithString(ctx, node->element); // append node->element to output
+                ++expired_element_num;
+                ++index; // since this one is expired, we should also check the next element (just like "pop")
+            }
+            else
+            {
+                done_with_queue = 1;
+            }
+        }
+    }
+    RedisModule_ReplySetArrayLength(ctx, expired_element_num);
+    RedisModule_CloseKey(key);
+    return REDISMODULE_OK;
+}
+
+/*
+* dehydrator.xack <element_id> <element_id> <element_id> ...
+* remove element off the bench by ids, but only if they are expired.
+* returns a list of the expired payloads, with Nulls for not-found, or not expired elements
+*/
+int XAckCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
+{
+    if (argc < 3)
+    {
+      return RedisModule_WrongArity(ctx);
+    }
+
+    // get key dehydrator_name
+    RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1],
+        REDISMODULE_READ|REDISMODULE_WRITE);
+    Dehydrator * dehydrator = validateDehydratorKey(ctx, key, NULL);
+    if (dehydrator == NULL)
+    {
+        RedisModule_ReplyWithArray(ctx, 0);
+        return REDISMODULE_OK;
+    }
+
+    time_t now = current_time_ms();
+    RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
+    int expired_element_num = 0;
+
+    int i;
+    for (i=2;i<argc;++i)
+    {
+
+        ElementListNode* node = _getNodeForID(dehydrator, argv[i]);
+        if ((node != NULL) && (node->expiration <= now))
+        {
+            _listPull(dehydrator, node);
+            _removeNodeFromMapping(dehydrator, node);
+
+            if (node->element == NULL)
+            {
+                RedisModule_ReplyWithNull(ctx);
+            }
+            else
+            {
+                RedisModule_ReplyWithString(ctx, node->element); // append node->element to output
+            }
+            deleteNode(node);
+        }
+        else
+        {
+            // no element with such element_id, or element had not expired yet
+            RedisModule_ReplyWithNull(ctx);
+        }
+    }
+    RedisModule_ReplySetArrayLength(ctx, expired_element_num);
+    RedisModule_CloseKey(key);
+    return REDISMODULE_OK;
+}
+
+
+int TestXPoll(RedisModuleCtx *ctx)
+{
+    printf("Testing XPOLL - ");
+    // TODO: test me
+    printf("WRITE ME!\n"); // printf("Passed.\n");
+    return REDISMODULE_ERR;
+}
+
+int TestXAck(RedisModuleCtx *ctx)
+{
+    printf("Testing XACK - ");
+    // TODO: test me
+    printf("WRITE ME!\n"); // printf("Passed.\n");
+    return REDISMODULE_ERR;
 }
 
 int TestLook(RedisModuleCtx *ctx)
@@ -1276,6 +1420,8 @@ int TestModule(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     RMUtil_Test(TestPoll);
     RMUtil_Test(TestTimeToNext);
     RMUtil_Test(TestUpdate);
+    RMUtil_Test(TestXPoll)
+    RMUtil_Test(TestXAck)
     printf("All Tests Passed Succesfully!\n");
 
     RedisModule_ReplyWithSimpleString(ctx, "PASS");
@@ -1316,6 +1462,12 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx)
 
     // register dehydrator.poll - using the shortened utility registration macro
     RMUtil_RegisterWriteCmd(ctx, "REDE.POLL", PollCommand);
+
+    // register dehydrator.poll - using the shortened utility registration macro
+    RMUtil_RegisterWriteCmd(ctx, "REDE.XPOLL", XPollCommand);
+
+        // register dehydrator.poll - using the shortened utility registration macro
+    RMUtil_RegisterWriteCmd(ctx, "REDE.XACK", XAckCommand);
 
     // register dehydrator.look - using the shortened utility registration macro
     RMUtil_RegisterReadCmd(ctx, "REDE.LOOK", LookCommand);
