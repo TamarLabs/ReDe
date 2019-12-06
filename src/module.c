@@ -75,10 +75,6 @@ char* generate_id(void)
     char* uuid = RedisModule_Alloc((ID_LENGTH+1)*sizeof(char));
     long allowed_char_range = strlen(ALLOWED_ID_CHARS)-1;
 
-
-    // Intializes random number generator
-    srandom((unsigned) time(0));
-
     int i;
     for (i=0;i<ID_LENGTH;++i)
     {
@@ -806,6 +802,13 @@ int GIDPushCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     RedisModuleString * element_id = NULL;
     while ((element_id == NULL) || (_getNodeForID(dehydrator, element_id) != NULL))
     {
+        // make sure that if this is NOT our first round we are cleaning after ourselves
+        if (element_id != NULL)
+        {
+            RedisModule_FreeString(ctx, element_id);
+        }
+
+        // generate id and transfer it to a REDIS string
         char* tmp = generate_id();
         element_id = RedisModule_CreateString(ctx, tmp, ID_LENGTH);
         RedisModule_Free(tmp);
@@ -818,9 +821,9 @@ int GIDPushCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     {
         RedisModule_ReplyWithString(ctx, element_id);
     }
-    RedisModule_FreeString(ctx,element_id);
+    RedisModule_FreeString(ctx, element_id);
 
-	RedisModule_CloseKey(key);
+    RedisModule_CloseKey(key);
     return retval;
 }
 
@@ -1312,6 +1315,9 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx)
 
     // register dehydrator.look - using the shortened utility registration macro
     RMUtil_RegisterReadCmd(ctx, "REDE.LOOK", LookCommand);
+
+    // Intializes random number generator for ID generation
+    srandom((unsigned int) time(NULL));
 
     // register dehydrator.gidpush - using the shortened utility registration macro
     RMUtil_RegisterWriteCmd(ctx, "REDE.GIDPUSH", GIDPushCommand);
