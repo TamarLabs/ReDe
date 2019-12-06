@@ -5,7 +5,7 @@
 
 :rocket:**TL;DR - A Dehydrator is a fancy delayed queue, see what commands this module provides [HERE](docs/Commands.md)**
 
-**ReDe** /'redɪ/ *n.* a Redis Module for simple data dehydration. This is a pretty straightforward implementation of the dehydration system depicted in the article "[Fast Data](https://goo.gl/DDFFPO)". The Goal of this module is to solve the *Contextual Completeness* and *Emergent Relevancy* problems by adding the ability to postpone incoming elements to a later time in which we will have a complete information for these elements. Effectively acting as a snooze button to any element.
+**ReDe** /'redɪ/ *n.* a Redis Module for simple data dehydration using the [Lawn algorithm](https://arxiv.org/abs/1906.10860). This is a pretty straightforward implementation of the dehydration system depicted in the article "[Fast Data](https://goo.gl/DDFFPO)". The Goal of this module is to solve the *Contextual Completeness* and *Emergent Relevancy* problems by adding the ability to postpone incoming elements to a later time in which we will have a complete information for these elements. Effectively acting as a snooze button to any element.
 
 ![a schematic view of the Filter-Split-Dehydrate architecture](img/FSD-scheme.png)
 
@@ -15,7 +15,7 @@ From the article:
 
 Using this system it is also possible to craft a self cleaning "claims check", to minimize load on transportation and manipulation nodes of a pipeline architecture.
 
-*You can read further on the algorithm behind this module [here](docs/Algorithm.md).*
+*You can read further on the algorithm behind this module [here](docs/Algorithm.md). or read the actual article [here](https://arxiv.org/abs/1906.10860)*
 
 The module works by adding a new type to Redis -`DehydratorType`. It will be ceated automatically when you call a push command on it, and it can be deleted using the `DEL` command like any other key.
 
