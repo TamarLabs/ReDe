@@ -1166,9 +1166,9 @@ int TestXPoll(RedisModuleCtx *ctx)
     RedisModuleCallReply *poll_three_rep =
       RedisModule_Call(ctx, "REDE.poll", "c", "TEST_DEHYDRATOR_xpoll");
     RMUtil_Assert(RedisModule_CallReplyType(poll_three_rep) != REDISMODULE_REPLY_ERROR);
-    /////RMUtil_Assert(RedisModule_CallReplyLength(poll_three_rep) == 2);
-    RedisModuleCallReply *subreply_b1 = RedisModule_CallReplyArrayElement(poll_three_rep, 0);
-    RMUtil_AssertReplyEquals(subreply_b1, "element_1");
+    RMUtil_Assert(RedisModule_CallReplyLength(poll_three_rep) == 1);
+    // RedisModuleCallReply *subreply_b1 = RedisModule_CallReplyArrayElement(poll_three_rep, 0);
+    // RMUtil_AssertReplyEquals(subreply_b1, "element_1");
     RedisModuleCallReply *subreply_b2 = RedisModule_CallReplyArrayElement(poll_three_rep, 1);
     RMUtil_AssertReplyEquals(subreply_b2, "element_3a");
 
