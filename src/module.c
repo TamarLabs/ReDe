@@ -1028,21 +1028,18 @@ int XPollCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     {
         if (!kh_exist(dehydrator->timeout_queues, k)) continue;
         ElementList* list = kh_value(dehydrator->timeout_queues, k);
-        int done_with_queue = 0;
-        while ((list != NULL) && (!done_with_queue))
+        if (list == NULL)
         {
-            index = 0; //set to head
-            ElementListNode* node = _listAt(list, index);
-            if ((node != NULL) && (node->expiration <= now))
-            {
-                RedisModule_ReplyWithString(ctx, node->element); // append node->element to output
-                ++expired_element_num;
-                ++index; // since this one is expired, we should also check the next element (just like "pop")
-            }
-            else
-            {
-                done_with_queue = 1;
-            }
+            continue;
+        }
+
+        int index = 0; //set to head
+        ElementListNode* node = _listAt(list, index);
+        while ((node != NULL) && (node->expiration <= now))
+        {
+            RedisModule_ReplyWithString(ctx, node->element); // append node->element to output
+            ++expired_element_num;
+            node = _listAt(list, ++index);
         }
     }
     RedisModule_ReplySetArrayLength(ctx, expired_element_num);
@@ -1111,9 +1108,105 @@ int XAckCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 int TestXPoll(RedisModuleCtx *ctx)
 {
     printf("Testing XPOLL - ");
+
+    // clear dehydrator
+    RedisModule_Call(ctx, "DEL", "c", "TEST_DEHYDRATOR_xpoll");
+
+    // start test
+    // push elements 1, 4, 7 & 3a (for 1, 4, 7 & 3 seconds)
+    // 1
+    RedisModuleCallReply *push1 =
+      RedisModule_Call(ctx, "REDE.push", "cccc", "TEST_DEHYDRATOR_xpoll", "1000", "element_1", "e1");
+    RMUtil_Assert(RedisModule_CallReplyType(push1) != REDISMODULE_REPLY_ERROR);
+
+    // 4
+    RedisModuleCallReply *push4 =
+      RedisModule_Call(ctx, "REDE.push", "cccc", "TEST_DEHYDRATOR_xpoll", "4000", "element_4", "e4");
+    RMUtil_Assert(RedisModule_CallReplyType(push4) != REDISMODULE_REPLY_ERROR);
+
+    // 7
+    RedisModuleCallReply *push7 =
+      RedisModule_Call(ctx, "REDE.push", "cccc", "TEST_DEHYDRATOR_xpoll", "7000", "element_7", "e7");
+    RMUtil_Assert(RedisModule_CallReplyType(push7) != REDISMODULE_REPLY_ERROR);
+
+    // 3a
+    RedisModuleCallReply *push3a =
+      RedisModule_Call(ctx, "REDE.push", "cccc", "TEST_DEHYDRATOR_xpoll", "3000", "element_3a", "e3a");
+    RMUtil_Assert(RedisModule_CallReplyType(push3a) != REDISMODULE_REPLY_ERROR);
+
+    // pull question 7
+    RedisModuleCallReply *pull_seven_rep =
+      RedisModule_Call(ctx, "REDE.pull", "cc", "TEST_DEHYDRATOR_xpoll", "e7");
+    RMUtil_Assert(RedisModule_CallReplyType(pull_seven_rep) != REDISMODULE_REPLY_ERROR);
+
+    // poll - make sure no element pops right out
+    RedisModuleCallReply *poll1_rep =
+      RedisModule_Call(ctx, "REDE.poll", "c", "TEST_DEHYDRATOR_xpoll");
+    RMUtil_Assert(RedisModule_CallReplyType(poll1_rep) != REDISMODULE_REPLY_ERROR);
+    RMUtil_Assert(RedisModule_CallReplyLength(poll1_rep) == 0);
+
+    // sleep 1 sec
+    sleep(1);
+    // push element 3b (for 3 seconds)
+    // 3b
+    RedisModuleCallReply *push_three_b =
+      RedisModule_Call(ctx, "REDE.push", "cccc", "TEST_DEHYDRATOR_xpoll", "3000", "element_3b", "e3b");
+    RMUtil_Assert(RedisModule_CallReplyType(push_three_b) != REDISMODULE_REPLY_ERROR);
+
+    // poll (t=1) - we expect only element 1 to be listed as pop out candidate
+    RedisModuleCallReply *poll_two_rep =
+      RedisModule_Call(ctx, "REDE.poll", "c", "TEST_DEHYDRATOR_xpoll");
+    RMUtil_Assert(RedisModule_CallReplyType(poll_two_rep) != REDISMODULE_REPLY_ERROR);
+    RMUtil_Assert(RedisModule_CallReplyLength(poll_two_rep) == 1);
+    RedisModuleCallReply *subreply_a = RedisModule_CallReplyArrayElement(poll_two_rep, 0);
+    RMUtil_AssertReplyEquals(subreply_a, "element_1")
+
+    // sleep 2 secs and poll (t=3) - we expect elements 1 and 3a to pop out
+    sleep(2);
+    RedisModuleCallReply *poll_three_rep =
+      RedisModule_Call(ctx, "REDE.poll", "c", "TEST_DEHYDRATOR_xpoll");
+    RMUtil_Assert(RedisModule_CallReplyType(poll_three_rep) != REDISMODULE_REPLY_ERROR);
+    RMUtil_Assert(RedisModule_CallReplyLength(poll_three_rep) == 2);
+    RedisModuleCallReply *subreply_b1 = RedisModule_CallReplyArrayElement(poll_three_rep, 0);
+    RMUtil_AssertReplyEquals(subreply_b1, "element_1");
+    RedisModuleCallReply *subreply_b2 = RedisModule_CallReplyArrayElement(poll_three_rep, 0);
+    RMUtil_AssertReplyEquals(subreply_b2, "element_3a");
+
+    // // sleep 2 secs and poll (t=5) - we expect elements 4 and 3b to pop out
+    // sleep(2);
+    // RedisModuleCallReply *poll_four_rep =
+    //   RedisModule_Call(ctx, "REDE.poll", "c", "TEST_DEHYDRATOR_xpoll");
+    // RMUtil_Assert(RedisModule_CallReplyType(poll_four_rep) != REDISMODULE_REPLY_ERROR);
+    // RMUtil_Assert(RedisModule_CallReplyLength(poll_four_rep) == 2);
+    // RedisModuleCallReply *subreply_c_first = RedisModule_CallReplyArrayElement(poll_four_rep, 0);
+    // RedisModuleCallReply *subreply_c_second = RedisModule_CallReplyArrayElement(poll_four_rep, 1);
+    // RedisModuleString * first_str =  RedisModule_CreateStringFromCallReply(subreply_c_first);
+    // RedisModuleString * second_str = RedisModule_CreateStringFromCallReply(subreply_c_second);
+    // RedisModuleString * element_3b_str = RedisModule_CreateString(ctx, "element_3b", strlen("element_3b"));
+    // RedisModuleString * element_4_str = RedisModule_CreateString(ctx, "element_4", strlen("element_4"));
+    // RMUtil_Assert(
+    // (
+    //     RMUtil_StringEquals(first_str, element_3b_str) &&
+    //     RMUtil_StringEquals(second_str, element_4_str)
+    // ) ||
+    // (
+    //     RMUtil_StringEquals(first_str, element_4_str) &&
+    //     RMUtil_StringEquals(second_str, element_3b_str)
+    // )
+    // );
+
+    // // sleep 6 secs and poll (t=11) - we expect that element 7 will NOT pop out, because we already pulled it
+    // sleep(6);
+    // RedisModuleCallReply *poll_five_rep = RedisModule_Call(ctx, "REDE.poll", "c", "TEST_DEHYDRATOR_xpoll");
+    // RMUtil_Assert(RedisModule_CallReplyType(poll_five_rep) != REDISMODULE_REPLY_ERROR);
+    // RMUtil_Assert(RedisModule_CallReplyLength(poll_five_rep) == 0);
+
+    // clear dehydrator
+    RedisModule_Call(ctx, "DEL", "c", "TEST_DEHYDRATOR_xpoll");
+
     // TODO: test me
     printf("WRITE ME!\n"); // printf("Passed.\n");
-    return REDISMODULE_ERR;
+    return REDISMODULE_ERR; return REDISMODULE_OK;
 }
 
 int TestXAck(RedisModuleCtx *ctx)
