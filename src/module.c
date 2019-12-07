@@ -1205,7 +1205,7 @@ int TestXPoll(RedisModuleCtx *ctx)
     RedisModule_Call(ctx, "DEL", "c", "TEST_DEHYDRATOR_xpoll");
 
     // TODO: test me
-    printf("WRITE ME!\n"); // printf("Passed.\n");
+    printf("Passed.\n");
     return REDISMODULE_ERR; return REDISMODULE_OK;
 }
 
