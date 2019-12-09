@@ -184,7 +184,7 @@ redis> REDE.XPOLL my_dehydrator
 
 *Available since: 0.5.0*
 
-*Time Complexity: O(max{N.M}) where N is the number of expired elements and M is the number of different TTLs elements were pushed with. *
+*Time Complexity: O(N) where N is the number of IDs given. *
 
 Pull and return all the expired elements of `dehydrator_name` from within the given set of IDs.
 
