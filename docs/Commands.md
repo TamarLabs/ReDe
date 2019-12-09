@@ -142,6 +142,78 @@ redis> REDE.POLL my_dehydrator
 ("Dehydrate this")
 ```
 
+## XPOLL ##
+
+*syntex:* **XPOLL** dehydrator_name
+
+*Available since: 0.5.0*
+
+*Time Complexity: O(max{N.M}) where N is the number of expired elements and M is the number of different TTLs elements were pushed with. *
+
+Return the IDs of all the expired elements in `dehydrator_name`, ***without pulling***.
+
+***Return Value***
+
+List of IDs for all expired elements on success, or an empty list if no elements are expired, the key is empty or the key contains something other the a dehydrator.
+
+Example
+```
+redis> REDE.PUSH my_dehydrator 3000 "Dehydrate this" 101
+OK
+redis> REDE.PUSH my_dehydrator 1000 "Dehydrate that" 102
+OK
+redis> REDE.XPOLL my_dehydrator
+(empty list or set)
+```
+wait for 1 second
+```
+redis> REDE.XPOLL my_dehydrator
+1) "102"
+```
+wait additional 2 seconds
+```
+redis> REDE.XPOLL my_dehydrator
+1) "101"
+2) "102"
+```
+
+
+## XACK ##
+
+*syntex:* **XPOLL** dehydrator_name
+
+*Available since: 0.5.0*
+
+*Time Complexity: O(max{N.M}) where N is the number of expired elements and M is the number of different TTLs elements were pushed with. *
+
+Pull and return all the expired elements of `dehydrator_name` from within the given set of IDs.
+
+***Return Value***
+
+List of all expired elements on success, populated with `(nil)`s wherever an error has occured. If no elements are expired, the key is empty or the key contains something other the a dehydrator, an empty list will be returned.
+
+Example
+```
+redis> REDE.PUSH my_dehydrator 3000 "Dehydrate this" 101
+OK
+redis> REDE.PUSH my_dehydrator 1000 "Dehydrate that" 102
+OK
+```
+wait for 1 second
+```
+redis> REDE.POLL my_dehydrator
+1) "Dehydrate that"
+```
+wait additional 2 seconds
+```
+redis> REDE.XPOLL my_dehydrator
+(101)
+redis> REDE.XACK my_dehydrator 101 102 103
+1) "Dehydrate this"
+2) (nil)
+3) (nil)
+```
+
 
 ## LOOK ##
 
