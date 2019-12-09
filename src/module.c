@@ -1291,8 +1291,7 @@ int TestXAck(RedisModuleCtx *ctx)
     RedisModuleCallReply *xack_subreply_1 = RedisModule_CallReplyArrayElement(xack_rep, 0);
     RMUtil_AssertReplyEquals(xack_subreply_1, "element_1");
     RedisModuleCallReply *xack_subreply_2 = RedisModule_CallReplyArrayElement(xack_rep, 1);
-    //RMUtil_AssertNullReply(xack_subreply_2);
-    RMUtil_Assert(RedisModule_CreateStringFromCallReply(xack_subreply_2) == NULL);
+    RMUtil_AssertNullReply(xack_subreply_2);
     RedisModuleCallReply *xack_subreply_3 = RedisModule_CallReplyArrayElement(xack_rep, 2);
     RMUtil_AssertReplyEquals(xack_subreply_3, "element_3a");
 
