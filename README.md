@@ -28,7 +28,7 @@ From the article:
 ![a schematic view of the Filter-Split-Dehydrate architecture](img/FSD-scheme.png)
 
 
-## What this repo includes:
+## This repo includes:
 
 ### 1. Dehydration module source code
 
@@ -95,7 +95,7 @@ The dehydrator is an effective 'snooze button' for events, you push an event int
 Here's what you need to do to build this module:
 
 0. Build Redis in a build supporting modules.
-1. Build the module: `make` or download the `.so` file from [the latest release](https://github.com/TamarLabs/ReDe/releases/latest)
+1. Build the module: `make` ***or*** download the `.so` file from [the latest release](https://github.com/TamarLabs/ReDe/releases/latest)
 3. Run Redis loading the module: `/path/to/redis-server --loadmodule path/to/module.so`
 
 Now run `redis-cli` and try the commands:
