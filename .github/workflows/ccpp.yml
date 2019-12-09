@@ -1,0 +1,18 @@
+name: C/C++ CI
+
+on: [push]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: install redis
+      run: git clone -b 5.0.7 --depth 1 https://github.com/antirez/redis.git; cd redis; make; cd ..;sudo pip install redis;
+    - name: start redis server
+      run: ./redis/src/redis-server --loadmodule ./module.so &
+    - name: make
+      run: make
+    - name: make test
+      run: make test
