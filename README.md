@@ -12,8 +12,12 @@
 From the article:
 > Dehydrators are simplistic time machines. They transport data elements that arrived prematurely in terms of their context right to the future where they might be needed, without loading the system while waiting. This concept is achieved by attaching a time-indexed data store to a clock, storing elements as they arrive to the dehydrator and re-introducing them as inputs to the system once a predetermined time period has passed.
 
+## Common Use Cases
 
-Using this system it is also possible to craft a self cleaning "claims check", to minimize load on transportation and manipulation nodes of a pipeline architecture.
+* **Stream Coordination** -  Make data from one stream wait for the corresponding data from another (preferebly using sliding-window style timing).
+* **Event Rate Limitation** - Delay any event beyond current max throughput to the next available time slot, while preserving order.
+* **Self Cleaning Claims-Check** - Store data for a well known period, without the need to search for it when it is expired or clear it from the data-store yourself, minimizing load on transportation and manipulation nodes of your pipeline architecture.
+* **Task Timer** - Postpone actions and their respective payloads to a specific point in time.
 
 *You can read further on the algorithm behind this module [here](docs/Algorithm.md). or read the actual article [here](https://arxiv.org/abs/1906.10860)*
 
@@ -21,12 +25,6 @@ The module works by adding a new type to Redis -`DehydratorType`. It will be cea
 
 ![a gif that shows basic usage](img/redehy-basics.gif)
 
-## Common Use Cases
-
-* **Stream Coordination** -  Make data from one stream wait for the corresponding data from another (preferebly using sliding-window style timing).
-* **Event Rate Limitation** - Delay any event beyond current max throughput to the next available time slot, while preserving order.
-* **Self Cleaning Claims-Check** - Store data for a well known period, without the need to search for it when it is expired or clear it from the data-store yourself.
-* **Task Timer** - Postpone actions and their respective payloads to a specific point in time.
 
 ## What this repo includes:
 
