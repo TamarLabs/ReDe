@@ -137,7 +137,7 @@ OK
 
 Enjoy!
 
-## Knowen Issues
+## Known Issues
 
 * TTN test is somewhat unstable on small or heavliy loaded machines.
 
